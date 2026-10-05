@@ -170,7 +170,7 @@ h2{font-family:'Jua';font-size:24px;margin:4px 0 12px;font-weight:400}
 h3{font-family:'Jua';font-size:19px;margin:0 0 10px;font-weight:400}
 
 /* ---------- 시트 / 모달 ---------- */
-.dim{position:fixed;inset:0;background:rgba(90,60,70,.35);z-index:40;display:none;align-items:flex-end;justify-content:center}
+.dim{position:fixed;inset:0;background:rgba(90,60,70,.35);z-index:70;display:none;align-items:flex-end;justify-content:center}
 .dim.on{display:flex;animation:fadeIn .2s}
 .dim.center{align-items:center;padding:20px}
 @keyframes fadeIn{from{opacity:0}to{opacity:1}}
@@ -795,6 +795,7 @@ input[type=date].inp,input[type=time].inp{min-height:52px;font-family:'Jua',sans
   <div class="field"><label>고양이 이름을 지어줘</label><input class="inp" id="o-cat" maxlength="8" placeholder="모찌"></div>
   <div class="field"><label>너는 뭐라고 불러줄까?</label><input class="inp" id="o-me" maxlength="8" value="지연"></div>
   <button class="btn" id="o-go">같이 시작하기</button>
+  <button class="link" id="o-import" style="display:block;margin:15px auto 0">예전에 공부한 기록 가져오기</button>
   <p class="note" style="text-align:center;margin-top:14px">하루 1분이라도 같이 하면 발자국 도장이 찍혀요.<br>매일 조금씩, 그거면 충분해요.</p>
 </div></div>
 
@@ -816,7 +817,7 @@ input[type=date].inp,input[type=time].inp{min-height:52px;font-family:'Jua',sans
 'use strict';
 /* =========================================================
    냥공부 — 공부를 "계속하는 것" 자체에 의미를 두는 고양이 앱
-   데이터는 전부 이 기기(localStorage)에만 저장된다.
+   기록은 이 기기에 저장하고 연결된 기기와 동기화한다.
    ========================================================= */
 const VAPID_PUBLIC='BCfGAyW1pa1fwBGQly3B4ZzAqE31YWjDKxlRWL6pGTvfxlK9LCmtSnGUTpRjRdv8Z5y1XYTyR3e3phY83KwCq0g';
 const KEY='nyang.v1';
@@ -1961,6 +1962,7 @@ function boot(){
   if(!S.me){
     $('#onb').classList.add('on');
     onbCat=new Walker($('#onbStage'));onbCat.setMood('happy');onbCat.onTap=c=>{c.face('pet',1400);c.hearts(5);c.say('반가워!',2000)};
+    $('#o-import').onclick=codeSheet;
     $('#o-go').onclick=()=>{const me=$('#o-me').value.trim();if(!me){toast('너를 부를 이름을 알려줘');return}
       S.me=me;S.cat=$('#o-cat').value.trim()||'모찌';save();$('#onb').classList.remove('on');renderAll();autoLink();
       homeCat.hop();homeCat.say(fmt('반가워 {me}! 나는 {cat이야}. 오늘부터 잘 부탁해'),6000)};
