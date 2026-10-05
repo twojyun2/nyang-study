@@ -1,0 +1,43 @@
+/* Real illustration assets, shared by the room, shop and purchase preview. */
+.stage{background:#faf0dc url('assets/painted/empty-room.png') center/100% 100% no-repeat!important;isolation:isolate}
+.stage::before{content:"";position:absolute;inset:0;background:var(--room-tint,transparent);mix-blend-mode:multiply;opacity:.32;pointer-events:none}
+.stage .wall,.stage .floor,.stage .rug{display:none}
+#homeStage{height:clamp(300px,70vw,400px);margin:10px -16px 8px;border-radius:22px}
+#decoStage{height:clamp(300px,70vw,380px)}
+.stage.bpv{height:320px}
+.painted-asset{overflow:hidden!important;display:block;width:100%;height:auto}
+.rmwrap{z-index:1}
+.ri-wallA{left:18px;top:24px}.ri-wallB{right:22px;top:22px}
+.ri-floorL{left:7px;bottom:45px}.ri-floorR{right:8px;bottom:44px}
+.ri-floorC{bottom:8px;z-index:-1}
+.catwrap{width:160px;height:160px;bottom:20px;z-index:2}
+#decoStage .catwrap{width:160px;height:160px;bottom:22px}
+.bpcat{width:150px;height:150px;margin-left:-75px;bottom:18px;z-index:2}
+.mini{width:140px;height:140px}
+.bubble{bottom:195px;z-index:4}
+.painted-cat .paint-pose{display:none}
+.painted-cat .paint-idle{display:inline}
+.painted-cat .paint-accessories .head>:not(.acc){display:none}
+.painted-cat.m-happy .paint-idle,.painted-cat.happyface .paint-idle,.painted-cat.pet .paint-idle{display:none}
+.painted-cat.m-happy .paint-happy,.painted-cat.happyface .paint-happy,.painted-cat.pet .paint-happy{display:inline}
+#focusStage .painted-cat .paint-idle,#focusStage .painted-cat .paint-happy{display:none}
+#focusStage .painted-cat .paint-study{display:inline}
+.painted-cat.walking .paint-pose{display:none!important}
+.painted-cat.walking .paint-walk{display:inline!important;animation:paint-step .32s ease-in-out infinite alternate;transform-origin:50% 100%}
+.painted-cat.m-sleep:not(.awake) .paint-pose,.painted-cat.m-rest:not(.awake) .paint-pose,.painted-cat.resting .paint-pose{display:none!important}
+.painted-cat.m-sleep:not(.awake) .paint-sleep,.painted-cat.m-rest:not(.awake) .paint-sleep,.painted-cat.resting .paint-sleep{display:inline!important;animation:paint-breathe 3s ease-in-out infinite;transform-origin:50% 100%}
+@keyframes paint-step{from{transform:translateY(0) rotate(-1deg)}to{transform:translateY(-3px) rotate(1deg)}}
+@keyframes paint-breathe{50%{transform:scaleY(1.025)}}
+.calmcat.draw,.calmcat.draw .cat{width:200px;height:200px}
+.accplate.ri-plate{width:90px;height:96px;background:transparent!important}
+.accplate.ri-plate svg.painted-asset{width:86px;height:92px}
+.paint-art>.painted-asset{width:200px;height:200px}
+.rchip .painted-asset{width:56px;height:58px}
+.banner .painted-asset{width:52px;max-height:60px}
+.swr{background:url('assets/painted/empty-room.png') center/cover}
+.swr .a,.swr .b{opacity:.35;mix-blend-mode:multiply}
+@media(min-width:900px){
+  #homeStage{height:clamp(400px,calc(100vh / var(--zm) - 90px),560px);margin:0}
+  #decoStage{height:340px}
+}
+@media(prefers-reduced-motion:reduce){.painted-cat .paint-pose{animation:none!important}}

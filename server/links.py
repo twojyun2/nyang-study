@@ -9,4 +9,4 @@ if not rows:
     print('아직 연결된 기기가 없어요 (학생이 새 버전 앱을 한 번 열어야 생김)')
 for r in rows:
     t = time.strftime('%m/%d %H:%M', time.localtime(r['upd'] / 1000)) if r['upd'] > 10**11 else '-'
-    print(f"{r['me'] or '(이름 없음)':8} 마지막 {t}  https://reversecompany.github.io/nyang-study/#k={r['k']}")
+    print(f"{r['me'] or '(이름 없음)':8} 마지막 {t}  https://twojyun2.github.io/nyang-study/#k={r['k']}")
