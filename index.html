@@ -5,13 +5,13 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <title>냥공부</title>
 <meta name="description" content="고양이랑 매일 조금씩 공부하는 앱">
-<meta name="theme-color" content="#fff3f6">
+<meta name="theme-color" content="#fffaf0">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="냥공부">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="apple-touch-icon" href="icons/icon-180.png">
-<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-180-v2.png">
+<link rel="icon" href="icons/icon-192-v2.png">
 <link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -1779,7 +1779,7 @@ async function enablePush(){
     let sub=await reg.pushManager.getSubscription();
     if(!sub) sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64u(VAPID_PUBLIC)});
     S.push=sub.toJSON();save();renderSet();
-    reg.showNotification(S.cat||'모찌',{body:fmt('알림 연결 완료! 이제 저녁마다 {cat이} 찾아올게'),icon:'icons/icon-192.png',tag:'hello'});
+    reg.showNotification(S.cat||'모찌',{body:fmt('알림 연결 완료! 이제 저녁마다 {cat이} 찾아올게'),icon:'icons/icon-192-v2.png',tag:'hello'});
   }catch(e){toast('알림 연결 실패: '+e.message)}
 }
 async function sharePush(){
