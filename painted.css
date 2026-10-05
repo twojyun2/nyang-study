@@ -1,6 +1,6 @@
 /* Real illustration assets, shared by the room, shop and purchase preview. */
-.stage{background:#faf0dc url('assets/painted/empty-room.png') center/100% 100% no-repeat!important;isolation:isolate}
-.stage::before{content:"";position:absolute;inset:0;background:var(--room-tint,transparent);mix-blend-mode:multiply;opacity:.32;pointer-events:none}
+.stage{background:#faf0dc var(--room-art,url('assets/painted/empty-room.png')) center/100% 100% no-repeat!important;isolation:isolate}
+.stage::before{display:none}
 .stage .wall,.stage .floor,.stage .rug{display:none}
 #homeStage{height:clamp(300px,70vw,400px);margin:10px -16px 8px;border-radius:22px}
 #decoStage{height:clamp(300px,70vw,380px)}
@@ -32,12 +32,26 @@
 .accplate.ri-plate{width:90px;height:96px;background:transparent!important}
 .accplate.ri-plate svg.painted-asset{width:86px;height:92px}
 .paint-art>.painted-asset{width:200px;height:200px}
-.rchip .painted-asset{width:56px;height:58px}
+.rchip .painted-asset{width:48px;height:48px;object-fit:contain}
 .banner .painted-asset{width:52px;max-height:60px}
-.swr{background:url('assets/painted/empty-room.png') center/cover}
-.swr .a,.swr .b{opacity:.35;mix-blend-mode:multiply}
+.swr,.roomb .swr{background:var(--room-preview,url('assets/painted/empty-room.png')) center/100% 100% no-repeat}
 @media(min-width:900px){
   #homeStage{height:clamp(400px,calc(100vh / var(--zm) - 90px),560px);margin:0}
   #decoStage{height:340px}
 }
 @media(prefers-reduced-motion:reduce){.painted-cat .paint-pose{animation:none!important}}
+
+/* The decoration panel must fit inside its desktop column at every zoom level. */
+@media(min-width:900px){
+  .decogrid{grid-template-columns:minmax(0,340px) minmax(0,1fr);max-width:100%}
+  .decogrid>*,#decoBody,#slots{min-width:0}
+  .rooms{grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr))}
+  #decoBody .note{overflow-wrap:anywhere}
+  .rchip{max-width:100%;min-width:0;text-align:left}
+}
+/* The glasses are face-on artwork; the walking and sleeping sprites are in profile. */
+.painted-cat.walking .acc-glasses,.painted-cat.m-sleep .acc-glasses,.painted-cat.m-rest .acc-glasses{display:none!important}
+.painted-cat .acc-bell{transform:translateY(10px)}
+.painted-cat .acc-glasses{transform:translateX(-8px) scale(1.65)}
+.painted-cat.w-glasses.m-happy .paint-happy{display:none}
+.painted-cat.w-glasses.m-happy .paint-idle{display:inline}

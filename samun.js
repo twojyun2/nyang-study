@@ -518,8 +518,9 @@ function finish(){
   s.hist.push({d, sc:P.score}); if (s.hist.length > 120) s.hist.shift();
   const mins = Math.max(1, Math.min(Math.round((now()-g.t0)/60000), Math.ceil(g.q.length*1.5)));   // 화면만 켜 두고 자리를 비운 시간은 공부 시간으로 안 친다
   const before = studyDays().length;
-  const churu = 1 + (ok >= n*.8 ? 1 : 0);
-  S.sessions.push({d, s:'soc', m:mins, t:now(), h:'quiz', c:churu});
+  const quizBonus = 1 + (ok >= n*.8 ? 1 : 0);
+  const churu = Math.max(quizBonus,RecordSafety.studyReward(mins));
+  S.sessions.push({d, s:'soc', m:mins, t:now(), h:'quiz', c:churu,quizBonus});
   if (typeof albumAdd === 'function') albumAdd(d);
   S.churu += churu;
   save(); renderAll(); render();

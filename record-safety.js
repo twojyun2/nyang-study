@@ -6,6 +6,21 @@ const RecordSafety = (() => {
   const set = (o,p,v) => {const a=p.split('.'),k=a.pop();let t=o;for(const n of a)t=t[n]||(t[n]={});t[k]=v;};
   const id = (p,x) => String(p==='album'?x.d:p==='sm.hist'?(x.t||x.d+':'+x.sc):x.id||x.t);
   const equal = (a,b) => JSON.stringify(a)===JSON.stringify(b);
+  const studyReward = minutes => Number.isFinite(Number(minutes))?Math.floor(Math.max(0,Number(minutes))/5):0;
+  const recordReward = x => x.c??(x.h==='quiz'?1:1+(x.m>=25?1:0)+(x.m>=50?1:0));
+  function upgradeStudyRewards(state){
+    const out={...state,sessions:(state.sessions||[]).map(x=>({...x}))};
+    let extra=0;
+    for(const x of out.sessions){
+      const paid=recordReward(x),owed=Math.max(paid,studyReward(x.m));
+      if(x.h==='quiz')x.quizBonus=x.quizBonus??Math.min(2,paid);
+      extra+=owed-paid;x.c=owed;
+    }
+    out.churu=(state.churu||0)+extra;
+    out.studyRewardBackpay=(state.studyRewardBackpay||0)+extra;
+    out.studyRewardV=2;out.churuFix=1;
+    return out;
+  }
   function track(before, after, time) {
     after.recordChanges=clone(after.recordChanges||{});
     for(const p of paths){
@@ -44,7 +59,7 @@ const RecordSafety = (() => {
       for(const [k,v] of Object.entries(older.sm?.rounds||{}))out.sm.rounds[k]=Math.max(v,out.sm.rounds[k]||0);
     }
     out.purchaseCosts={...(older.purchaseCosts||{}),...(newer.purchaseCosts||{})};
-    const reward=s=>(s.sessions||[]).reduce((n,x)=>n+(x.c??(x.h==='quiz'?1:1+Math.floor(x.m/25))),0);
+    const reward=s=>(s.sessions||[]).reduce((n,x)=>n+recordReward(x),0);
     let extraCost=0;
     for(const p of ['bought','rmBought','roomBought','frameBought'])for(const k of out[p])
       if(!(newer[p]||[]).includes(k))extraCost+=out.purchaseCosts[p+':'+k]||0;
@@ -61,6 +76,6 @@ const RecordSafety = (() => {
     if(list[0]?.data===raw)return;
     list.unshift({at:Date.now(),reason,data:raw});storage.setItem(k,JSON.stringify(list.slice(0,5)));
   }
-  return {merge,track,backup,clone};
+  return {merge,track,backup,clone,studyReward,recordReward,upgradeStudyRewards};
 })();
 if(typeof module!=='undefined')module.exports=RecordSafety;

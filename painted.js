@@ -22,7 +22,7 @@ const PAINTED_SEASONAL = {
 RM_ITEMS.forEach(item => {
   const core=PAINTED_FURNITURE[item.id], box=core||PAINTED_SEASONAL[item.id];
   if(!box)return;
-  item.w=box[4];
+  item.w=Math.round(box[4]*.7);
   // The lantern tassel sits just above the stocking in the source atlas.
   const clipShape=item.id==='stocking'?'<path d="M917 369H1060V350H1150V603H917Z"/>':'';
   item.svg=paintedSprite(core?'furniture.png':'seasonal.png',core?[1254,1254]:[1774,887],box.slice(0,4),'',clipShape);

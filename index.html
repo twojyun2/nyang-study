@@ -625,7 +625,7 @@ input[type=date].inp,input[type=time].inp{min-height:52px;font-family:'Jua',sans
   #decoStage{height:clamp(170px,24dvh,212px)}
 }
 </style>
-<link rel="stylesheet" href="painted.css?v=20261004a">
+<link rel="stylesheet" href="painted.css?v=20261005e">
 </head>
 <body>
 <div id="app">
@@ -809,10 +809,10 @@ input[type=date].inp,input[type=time].inp{min-height:52px;font-family:'Jua',sans
   </defs>
 </svg>
 
-<script src="record-safety.js?v=20261005a"></script>
+<script src="record-safety.js?v=20261005f"></script>
 <script src="deco.js?v=20261004a"></script>
-<script src="painted.js?v=20261004a"></script>
-<script src="samun.js?v=20260930b"></script>   <!-- 버전 표시: index.html과 samun.js가 서로 다른 시점 것으로 섞이지 않게 -->
+<script src="painted.js?v=20261005f"></script>
+<script src="samun.js?v=20261005f"></script>   <!-- 버전 표시: index.html과 samun.js가 서로 다른 시점 것으로 섞이지 않게 -->
 <script>
 'use strict';
 /* =========================================================
@@ -856,7 +856,7 @@ const SHOP_ACC=[   // 츄르로 사는 아이템
   {id:'wreath',  n:'꽃 화환',   cost:35, pc:'#ffe3ea'},
 ];
 const ROOMS=[   // 츄르로 사는 방 테마
-  {id:'basic',   n:'빈 방',     cost:0,  wall:'#f8f2e7', f1:'#f2eadb', f2:'#f2eadb', bd:'#d9c8b5', rug:'transparent'},
+  {id:'basic',   n:'기본 방',   cost:0,  wall:'#f8f2e7', f1:'#f2eadb', f2:'#f2eadb', bd:'#d9c8b5', rug:'transparent'},
   {id:'mint',    n:'민트 방',   cost:20, wall:'#e9f1e7', f1:'#dfe8db', f2:'#dfe8db', bd:'#bdcbb9', rug:'transparent'},
   {id:'lavender',n:'라벤더 방', cost:30, wall:'#f0edf4', f1:'#e7e1eb', f2:'#e7e1eb', bd:'#cfc4d2', rug:'transparent'},
   {id:'night',   n:'밤하늘 방', cost:45, wall:'#444659', f1:'#55566b', f2:'#55566b', bd:'#79778d', rug:'transparent'},
@@ -953,13 +953,10 @@ function normalizeState(s){
   const next={...defaultsS(),...s,rm:{...defaultsS().rm,...s.rm}};
   for(const key of ['sessions','rests','wear','seenAcc','bought','roomBought','frameBought','album','rmBought','seasonSeen'])
     if(!Array.isArray(next[key]))throw new Error('기록 형식 확인 필요: '+key);
-  if(!s.roomArtV2){
-    if(next.rm.wallB==='window'&&!next.rmBought.includes('window')){
-      if(next.rmBought.length)next.rmBought=[...next.rmBought,'window'];else next.rm.wallB=null;
-    }
-    next.look='draw';next.roomArtV2=1;
-  }
-  return next;
+  // 예전 버전의 무료 기본 창문은 소유 목록에 없으면 방에서 제거한다.
+  if(next.rm.wallB==='window'&&!next.rmBought.includes('window'))next.rm.wallB=null;
+  if(!s.roomArtV2){next.look='draw';next.roomArtV2=1;}
+  return RecordSafety.upgradeStudyRewards(next);
 }
 function backupState(state,reason){RecordSafety.backup(localStorage,KEY,state,reason)}
 function load(){
@@ -967,7 +964,7 @@ function load(){
   if(!raw)return defaultsS();
   // Fail closed: damaged or full storage must never silently become an empty account.
   try{const s=JSON.parse(raw);if(s?.v!==1)throw new Error('기록 버전 확인 필요');
-    if(!s.roomArtV2)backupState(s,'그림 업데이트 전');return normalizeState(s);
+    if(!s.roomArtV2||s.studyRewardV!==2)backupState(s,'그림·츄르 업데이트 전');return normalizeState(s);
   }catch(e){alert('기존 기록을 안전하게 불러오지 못했어요. 저장 공간을 확인하고 다시 열어 주세요. 기존 기록은 지우지 마세요.');throw e}
 }
 function persistState(){localStorage.setItem(KEY,JSON.stringify(S));savedState=RecordSafety.clone(S)}
@@ -1070,6 +1067,7 @@ const st=document.createElement('style');st.textContent='@keyframes breath{0%,10
 function applyFur(){const f=FURS[S.fur]||FURS.cheese;const r=document.documentElement.style;
   r.setProperty('--fur',f.fur);r.setProperty('--p1',f.p1);r.setProperty('--p2',f.p2);r.setProperty('--tail',f.tail)}
 function applyRoom(){const rm=ROOMS.find(x=>x.id===S.room)||ROOMS[0];const r=document.documentElement.style;
+  r.setProperty('--room-art',`url('assets/painted/${rm.id==='basic'?'empty-room.png':'room-'+rm.id+'.jpg'}')`);
   r.setProperty('--room-wall',rm.wall);r.setProperty('--room-tint',rm.id==='basic'?'transparent':rm.wall);r.setProperty('--room-floor1',rm.f1);r.setProperty('--room-floor2',rm.f2);
   r.setProperty('--room-border',rm.bd);r.setProperty('--room-rug',rm.rug)}
 function frameVars(f){return {'--frame-bd':f.bd,'--frame-bg':f.bg,'--frame-tape':f.tape,'--frame-ring':f.ring||'none','--frame-r':f.r||'25%','--frame-rr':f.rr||'28%',
@@ -1286,8 +1284,8 @@ function endFocus(){
   if(m<1){save();renderAll();openModal(`${miniCat()}<p class="rewardnum">1분도 안 됐어!</p><p class="line">그래도 책 편 거 칭찬해. 다음엔 딱 1분만 더 버텨보자.</p><br><button class="btn" onclick="closeModal()">응!</button>`);return}
   record(r.s,m,'timer');
 }
-/* 츄르 = 1개 + 25분마다 1개씩 더 (1시간 3개, 2시간 5개, 3시간 8개). 예전엔 50분 넘으면 최대 3개에서 멈췄다. */
-const churuFor=m=>1+Math.floor(Math.min(m,600)/25);
+/* 공부 5분마다 츄르 1개. 기존 기록의 부족분은 불러오기와 동기화 때 보충한다. */
+const churuFor=RecordSafety.studyReward;
 const churuOld=m=>1+(m>=25?1:0)+(m>=50?1:0);
 function record(sid,m,how,when){
   const before=studyDays().length,ts=when?when.t:Date.now(),d=when?when.d:dayOf(ts),isToday=d===dayOf();
@@ -1483,7 +1481,7 @@ function editSession(t){
     let nt=(d===x.d&&tm===hm(x.t))?x.t:Math.min(tsOf(d,tm),Date.now());
     while(S.sessions.some(y=>y!==x&&y.t===nt))nt++;
     x.s=sid;x.m=m;x.d=d;x.t=nt;
-    const c0=S.churu;if(x.h!=='quiz'){x.c=churuFor(m);S.churu=Math.max(0,S.churu+x.c-g0)}
+    const c0=S.churu;x.c=x.h==='quiz'?Math.max(x.quizBonus??Math.min(2,g0),churuFor(m)):churuFor(m);S.churu=Math.max(0,S.churu+x.c-g0);
     if(oldD!==d){if(!S.sessions.some(y=>y.d===oldD))S.album=S.album.filter(e=>e.d!==oldD);albumAdd(d)}
     const dc=S.churu-c0;save();renderAll();daySheet(d);toast('고쳤어요!'+(dc?` 츄르 ${dc>0?'+':''}${dc}`:''))};
 }
@@ -1609,7 +1607,7 @@ function tabCat(){
     decoCat.face('pet',1200);decoCat.hearts(3)});
 }
 const frameSwatch=f=>`<div class="fsw" style="${frameStyle(f)}"><div class="fsi"></div></div>`;
-const roomSwatch=r=>`<div class="swr" style="--f1:${r.f1};--f2:${r.f2}"><div class="a" style="background:${r.wall}"></div><div class="b"></div></div>`;
+const roomSwatch=r=>`<div class="swr" style="--room-preview:url('assets/painted/${r.id==='basic'?'empty-room.png':'room-'+r.id+'.jpg'}')"></div>`;
 function tabFrame(){
   $('#decoBody').innerHTML=`<h3>내 액자 <span class="note">— 모양이 다른 액자는 상점에서</span></h3>${S.look!=='photo'?'<p class="note" style="margin:-4px 0 10px">액자는 사진 냥이 모습일 때 보여요</p>':''}<div class="rooms" id="frs"></div>`;
   $('#frs').innerHTML=FRAMES.filter(frameOwned).map(f=>{const on=S.frame===f.id;
@@ -1673,7 +1671,7 @@ function previewHTML(kind,it){
   const wear=kind==='acc'?wearWith(it.id):S.wear;
   const items=kind==='item'?{...S.rm,[it.slot]:it.id}:S.rm;
   const photo=S.look==='photo'||kind==='frame'||(kind==='acc'&&!DRAW_ACC.includes(it.id));   // 그림 냥이에 안 그려지는 것은 사진으로 보여준다
-  const vars=`--room-tint:${rm.id==='basic'?'transparent':rm.wall};--room-wall:${rm.wall};--room-floor1:${rm.f1};--room-floor2:${rm.f2};--room-border:${rm.bd};--room-rug:${rm.rug};${frameStyle(fr)}`;
+  const vars=`--room-art:url('assets/painted/${rm.id==='basic'?'empty-room.png':'room-'+rm.id+'.jpg'}');--room-wall:${rm.wall};--room-floor1:${rm.f1};--room-floor2:${rm.f2};--room-border:${rm.bd};--room-rug:${rm.rug};${frameStyle(fr)}`;
   const cat=photo?stickerHTML('happy'):catSVG().replace('class="cat painted-cat"','class="cat painted-cat happyface"');
   return `<div class="stage bpv" style="${vars}"><div class="wall"></div><div class="floor"></div><div class="rug"></div><div class="rmwrap">${roomLayers(items)}</div>
     <div class="bpcat ${photo?'photo':''} ${wear.map(id=>'w-'+id).join(' ')}">${cat}</div></div>`;
@@ -1719,15 +1717,10 @@ function seasonNotice(){
 }
 /* 한 번만: 츄르 규칙이 바뀌기 전에 오래 공부한 몫을 채워준다 */
 function churuBackpay(){
-  if(S.churuFix)return false;S.churuFix=1;
-  let extra=0,long=0;
-  S.sessions.forEach(x=>{if(x.c!=null)return;
-    if(x.h==='quiz'){x.c=1;return}
-    const o=churuOld(x.m),n=churuFor(x.m);x.c=Math.max(o,n);if(n>o){extra+=n-o;long+=x.m}});
-  if(extra<=0){save();return false}
-  S.churu+=extra;save();renderAll();
-  openModal(`${miniCat()}<p class="rewardnum">츄르 +${extra}</p><p class="line">오래 공부한 만큼 츄르를 더 받도록 바꿨어요.<br>지금까지 길게 공부한 ${fmtMin(long)}만큼 채워 드려요!</p>
-    <p class="note">이제 25분마다 츄르가 1개씩 더 생겨요.<br>1시간 3개 · 2시간 5개 · 3시간 8개</p><br><button class="btn" id="bp-ok">고마워요</button>`);
+  const extra=S.studyRewardBackpay||0;if(extra<=0)return false;
+  S.studyRewardBackpay=0;save();renderAll();
+  openModal(`${miniCat()}<p class="rewardnum">부족했던 츄르 +${extra}</p><p class="line">기존 공부 기록을 새 기준으로 다시 계산해서<br>덜 받은 츄르를 모두 채워 드렸어요!</p>
+    <p class="note">이제 공부 5분마다 츄르 1개예요.<br>5~9분 1개 · 10~14분 2개 · 15~19분 3개<br>이미 받은 보상은 빼고 부족분만 지급했어요.</p><br><button class="btn" id="bp-ok">좋아요</button>`);
   $('#bp-ok').onclick=()=>{closeModal();setTimeout(runOnce,400)};
   return true;
 }
@@ -1836,13 +1829,14 @@ async function syncExchange(key){
       if(!response.ok)throw new Error('동기화 읽기 실패');
       const remote=await response.json();if(key!==syncK)return 'off';
       if(!Object.prototype.hasOwnProperty.call(remote,'data'))throw new Error('서버 응답 확인 필요');
-      let incoming=null;
-      if(remote.data){incoming=await unpackS(remote.data);if(incoming.v!==1)throw new Error('기록 형식 확인 필요');incoming.upd=remote.upd;}
+      let incoming=null,rawIncoming=null;
+      if(remote.data){rawIncoming=await unpackS(remote.data);if(rawIncoming.v!==1)throw new Error('기록 형식 확인 필요');
+        rawIncoming.upd=remote.upd;backupState(rawIncoming,'서버 기록 원본');incoming=normalizeState(rawIncoming);}
       const before=JSON.stringify(S);
       if(incoming){backupState(S,'기기 동기화 전');S=normalizeState(RecordSafety.merge(S,incoming));}
       // Every upload is preceded by a read; never send an empty state after a failed read.
       const content=state=>{const {upd,run,push,...rest}=state;return JSON.stringify(rest)};
-      const needsWrite=!incoming||content(S)!==content(incoming);
+      const needsWrite=!rawIncoming||content(S)!==content(rawIncoming);
       if(needsWrite)S.upd=Math.max(Date.now(),(S.upd||0)+1,(remote.upd||0)+1);
       persistState();syncSW();
       if(JSON.stringify(S)!==before){
@@ -1943,7 +1937,8 @@ function fitDesk(){
   if(!mqDesk.matches){h.style.zoom='';h.style.setProperty('--zm','1');return}
   const hv=$('#v-home'),acts=document.querySelector('#v-home .acts');
   if(hv&&acts&&hv.classList.contains('on')){h.style.zoom='1';h.style.setProperty('--zm','1');deskNeed=acts.getBoundingClientRect().bottom+window.scrollY+20}
-  const zz=Math.max(.72,Math.min(1.6,innerWidth/1120,innerHeight/(deskNeed||700)));
+  const maxZoom=$('#v-deco').classList.contains('on')?1.15:1.6;
+  const zz=Math.max(.72,Math.min(maxZoom,(innerWidth-32)/1152,innerHeight/(deskNeed||700)));
   h.style.zoom=zz.toFixed(3);h.style.setProperty('--zm',zz.toFixed(3));
 }
 addEventListener('resize',()=>{clearTimeout(fitT);fitT=setTimeout(fitDesk,60)});

@@ -23,10 +23,10 @@ for(const file of ['deco.js','painted.js','samun.js','sw.js','record-safety.js']
 console.log('PASS: independent study records, repeat merges, rewards, deletions, edits, mock records, purchases, legacy state, immutable backup, JS syntax');
 // Exercise the actual sync code with an in-memory server; no real user data/network.
 const block=html.slice(html.indexOf('let syncFlight=null;'),html.indexOf('function syncLink()'));
-async function scenario({failRead=false,staleOnce=false,writeDuring=false}={}){
+async function scenario({failRead=false,staleOnce=false,writeDuring=false,upgradeRewards=false}={}){
   let server=R.clone(b),posts=0,reads=0,backups=0;
   const context={S:R.clone(a),syncK:'test-only',SYNC_URL:'test',syncT:null,lastSync:0,RecordSafety:R,clearTimeout,Date,JSON,Promise,
-    normalizeState:x=>x,backupState:()=>backups++,persistState(){},syncSW(){},applyFur(){},applyRoom(){},applyFrame(){},homeCat:null,focusCat:null,decoCat:null,
+    normalizeState:upgradeRewards?R.upgradeStudyRewards:x=>x,backupState:()=>backups++,persistState(){},syncSW(){},applyFur(){},applyRoom(){},applyFrame(){},homeCat:null,focusCat:null,decoCat:null,
     $:()=>({classList:{remove(){}}}),renderAll(){},renderSyncCard(){},syncSoon(){},packS:async x=>JSON.stringify(x),unpackS:async x=>JSON.parse(x),
     fetch:async(url,options={})=>{
       if(!options.method){reads++;if(failRead)throw Error('offline');return {ok:true,json:async()=>({upd:server.upd,data:JSON.stringify(server)})}}
@@ -36,19 +36,34 @@ async function scenario({failRead=false,staleOnce=false,writeDuring=false}={}){
       if(writeDuring){context.S.sessions.push({t:100,m:25,c:2});context.S.upd++;}
       return {json:async()=>({ok:true})};
     }};
+  if(upgradeRewards)context.S=R.upgradeStudyRewards(context.S);
   vm.createContext(context);vm.runInContext(block,context);
   const status=await vm.runInContext('syncPull()',context);
   if(failRead){assert.equal(posts,0);assert.equal(context.S.sessions.length,2);assert.equal(status,'err');}
   else {assert.equal(status,'pulled');assert.ok(backups);assert.ok(reads);assert.ok(server.sessions.some(x=>x.t===2));assert.ok(server.sessions.some(x=>x.t===3));}
   if(staleOnce)assert.ok(server.sessions.some(x=>x.t===99));
   if(writeDuring)assert.ok(context.S.sessions.some(x=>x.t===100));
+  if(upgradeRewards){assert.equal(server.churu,30);assert.equal(context.S.churu,30);await vm.runInContext('syncPull()',context);assert.equal(server.churu,30);assert.equal(context.S.churu,30);}
 }
-(async()=>{await scenario();await scenario({failRead:true});await scenario({staleOnce:true});await scenario({writeDuring:true});console.log('PASS: read before write, offline preservation, stale-server retry, changes during upload');})().catch(e=>{console.error(e);process.exitCode=1});
+(async()=>{await scenario();await scenario({failRead:true});await scenario({staleOnce:true});await scenario({writeDuring:true});await scenario({upgradeRewards:true});console.log('PASS: read before write, offline preservation, stale-server retry, changes during upload, remote historical reward upgrade');})().catch(e=>{console.error(e);process.exitCode=1});
 const normalizer=html.slice(html.indexOf('function defaultsS()'),html.indexOf('function backupState('));
-const normContext={defaultDday:()=> '2026-11-19',Date};vm.createContext(normContext);vm.runInContext(normalizer,normContext);
+const normContext={defaultDday:()=> '2026-11-19',Date,RecordSafety:R};vm.createContext(normContext);vm.runInContext(normalizer,normContext);
 normContext.old={...R.clone(base),rm:{wallB:'window'},room:'pink',wear:['bow'],rmBought:[],fur:'black',look:'photo'};
 const migrated=vm.runInContext('normalizeState(old)',normContext);
-assert.equal(migrated.rm.wallB,null);assert.equal(migrated.look,'draw');assert.equal(migrated.churu,12);
-assert.equal(JSON.stringify(migrated.sessions),JSON.stringify(base.sessions));assert.equal(JSON.stringify(migrated.sm),JSON.stringify(base.sm));assert.deepEqual(Array.from(migrated.wear),['bow']);
-normContext.old.rmBought=['desk'];const decorated=vm.runInContext('normalizeState(old)',normContext);assert.equal(decorated.rm.wallB,'window');assert.ok(decorated.rmBought.includes('window'));
+assert.equal(migrated.rm.wallB,null);assert.equal(migrated.look,'draw');assert.equal(migrated.churu,15);
+assert.equal(migrated.sessions[0].c,5);assert.equal(migrated.sessions[0].m,base.sessions[0].m);assert.equal(migrated.sessions[0].t,base.sessions[0].t);assert.equal(JSON.stringify(migrated.sm),JSON.stringify(base.sm));assert.deepEqual(Array.from(migrated.wear),['bow']);
+normContext.old.rmBought=['desk'];const decorated=vm.runInContext('normalizeState(old)',normContext);assert.equal(decorated.rm.wallB,null);assert.ok(decorated.rmBought.includes('desk'));
+normContext.old.rmBought=['desk','window'];const ownedWindow=vm.runInContext('normalizeState(old)',normContext);assert.equal(ownedWindow.rm.wallB,'window');
 console.log('PASS: pre-update study/quiz/balance/accessory preservation and empty-room migration');
+// Backpay only the unpaid difference, including zero/missing old rewards and quizzes.
+const underpaid={...R.clone(base),churu:7,rmBought:['desk'],purchaseCosts:{'rmBought:desk':25},sessions:[{t:1,m:25,c:2},{t:2,m:60,c:3},{t:3,m:5,c:0},{t:4,m:120},{t:5,m:20,h:'quiz',c:2},{t:6,m:1,c:1}]};
+const paid=R.upgradeStudyRewards(underpaid);assert.equal(paid.churu,43);assert.equal(paid.studyRewardBackpay,36);
+assert.deepEqual(paid.sessions.map(x=>x.c),[5,12,1,24,4,1]);assert.deepEqual(paid.rmBought,['desk']);assert.deepEqual(paid.purchaseCosts,underpaid.purchaseCosts);
+assert.deepEqual(R.upgradeStudyRewards(paid),paid);assert.equal(underpaid.churu,7);assert.equal(underpaid.sessions[0].c,2);
+const paidOther=R.upgradeStudyRewards({...R.clone(underpaid),upd:100});
+assert.equal(R.upgradeStudyRewards(R.merge(paid,paidOther)).churu,43);
+const newerStudy=R.clone(paid);newerStudy.sessions.push({t:7,m:10,c:2});newerStudy.churu+=2;newerStudy.upd=200;R.track(paid,newerStudy,200);
+assert.equal(R.upgradeStudyRewards(R.merge(newerStudy,paidOther)).churu,45);
+assert.equal(R.studyReward(5),1);assert.equal(R.studyReward(25),5);assert.equal(R.studyReward(60),12);assert.equal(R.studyReward(720),144);
+for(const [minutes,count] of [[0,0],[4,0],[9,1],[10,2],[14,2],[15,3],[19,3],[20,4]])assert.equal(R.studyReward(minutes),count);
+console.log('PASS: five-minute rewards, historical compensation, repeated loading and multi-device merge without duplicate backpay');
