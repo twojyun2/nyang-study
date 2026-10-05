@@ -625,7 +625,7 @@ input[type=date].inp,input[type=time].inp{min-height:52px;font-family:'Jua',sans
   #decoStage{height:clamp(170px,24dvh,212px)}
 }
 </style>
-<link rel="stylesheet" href="painted.css?v=20261005e">
+<link rel="stylesheet" href="painted.css?v=20261005g">
 </head>
 <body>
 <div id="app">
@@ -811,8 +811,8 @@ input[type=date].inp,input[type=time].inp{min-height:52px;font-family:'Jua',sans
 
 <script src="record-safety.js?v=20261005f"></script>
 <script src="deco.js?v=20261004a"></script>
-<script src="painted.js?v=20261005f"></script>
-<script src="samun.js?v=20261005f"></script>   <!-- 버전 표시: index.html과 samun.js가 서로 다른 시점 것으로 섞이지 않게 -->
+<script src="painted.js?v=20261005g"></script>
+<script src="samun.js?v=20261005g"></script>   <!-- 버전 표시: index.html과 samun.js가 서로 다른 시점 것으로 섞이지 않게 -->
 <script>
 'use strict';
 /* =========================================================
@@ -890,7 +890,7 @@ const OLD_SLOTS={bow:['tr'],bell:['bottom'],flower:['tl'],glasses:['br'],crown:[
 ROOMS.forEach(r=>r.theme='color');ROOMS.push(...ROOMS_NEW);
 FRAMES.push(...FRAMES_NEW);FRAMES.forEach(f=>f.theme=f.theme||'frame');
 const ACC_ALL=[...ACCS,...SHOP_ACC];
-const DRAW_ACC=['bow','bell','flower','glasses','crown','headband','bowtie','scarf'];   // 그림 냥이에도 그려지는 장식
+const DRAW_ACC=ACC_ALL.map(a=>a.id);   // 그림 냥이에도 그려지는 장식
 const THEME_BY=Object.fromEntries(THEMES.map(t=>[t.id,t]));
 const RM_BY=Object.fromEntries(RM_ITEMS.map(i=>[i.id,i]));
 const accById=id=>ACC_ALL.find(a=>a.id===id);
@@ -941,6 +941,7 @@ Object.assign(PACC,{
   ears:'<svg viewBox="0 0 96 28"><path d="M6 28 L11 3 L36 22Z M90 28 L85 3 L60 22Z" fill="#fff4e6" stroke="#5a4646" stroke-width="1.8" stroke-linejoin="round"/><path d="M13 24 L15 10 L27 20Z M83 24 L81 10 L69 20Z" fill="#ffb8c8"/></svg>',
 });
 ACC_NEW.forEach(a=>PACC[a.id]=a.svg);
+Object.keys(PAINTED_ACCESSORIES).forEach(id=>PACC[id]=paintedAccessoryIcon(id));
 {const st=document.createElement('style');st.textContent=ACC_NEW.map(a=>`.w-${a.id} .pacc.${a.id}{display:block;${a.pos}}`).join('\n');document.head.appendChild(st)}
 function stickerHTML(kind){const id=pick(PHOTOS[kind]||PHOTOS.happy);
   return `<div class="ph"><div class="pimg" style="background-image:url(${photoUrl(id)})"></div><div class="ftape a"></div><div class="ftape b"></div>${Object.entries(PACC).map(([k,v])=>`<div class="pacc ${k}">${v}</div>`).join('')}</div>`}
@@ -1070,7 +1071,7 @@ function applyRoom(){const rm=ROOMS.find(x=>x.id===S.room)||ROOMS[0];const r=doc
   r.setProperty('--room-art',`url('assets/painted/${rm.id==='basic'?'empty-room.png':'room-'+rm.id+'.jpg'}')`);
   r.setProperty('--room-wall',rm.wall);r.setProperty('--room-tint',rm.id==='basic'?'transparent':rm.wall);r.setProperty('--room-floor1',rm.f1);r.setProperty('--room-floor2',rm.f2);
   r.setProperty('--room-border',rm.bd);r.setProperty('--room-rug',rm.rug)}
-function frameVars(f){return {'--frame-bd':f.bd,'--frame-bg':f.bg,'--frame-tape':f.tape,'--frame-ring':f.ring||'none','--frame-r':f.r||'25%','--frame-rr':f.rr||'28%',
+function frameVars(f){return {...paintedFrameVars(f.id),'--frame-bd':f.bd,'--frame-bg':f.bg,'--frame-tape':f.tape,'--frame-ring':f.ring||'none','--frame-r':f.r||'25%','--frame-rr':f.rr||'28%',
   '--frame-clip':f.clip||'none','--frame-bw':f.bw||'5px','--frame-bb':f.bb||f.bw||'5px','--frame-after':f.after||'none'}}
 const frameStyle=f=>Object.entries(frameVars(f)).map(([k,v])=>k+':'+v).join(';');
 function applyFrame(){const f=FRAMES.find(x=>x.id===S.frame)||FRAMES[0];const r=document.documentElement.style;
@@ -1554,19 +1555,7 @@ function furButtons(box,onPick){
 }
 function accIcon(id){return `<svg class="cat" viewBox="-40 -48 80 80">${headSVG().replace('class="head"','class="head w-'+id+'"')}</svg>`}
 const ICONLINE='stroke="#5a4646" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"';
-function badgeIcon(id){
-  const s=ICONLINE;
-  return {
-    bow:`<svg viewBox="-24 -24 48 48"><path d="M0 0 L-15 -10 L-15 10 Z M0 0 L15 -10 L15 10 Z" fill="#ff7aa2" ${s}/><circle r="4.4" fill="#ff5c8a" ${s}/></svg>`,
-    bell:`<svg viewBox="-24 -24 48 48"><path d="M-16 -6 Q0 9 16 -6" fill="none" ${s} stroke-width="5"/><circle cy="4" r="7" fill="#ffd35c" ${s}/><path d="M-3 5h6" ${s} stroke-width="1.6"/></svg>`,
-    flower:`<svg viewBox="-24 -24 48 48"><g fill="#ffc9da" ${s} stroke-width="1.4"><circle cy="-8" r="6.2"/><circle cx="7.6" cy="-2.4" r="6.2"/><circle cx="4.8" cy="6.5" r="6.2"/><circle cx="-4.8" cy="6.5" r="6.2"/><circle cx="-7.6" cy="-2.4" r="6.2"/></g><circle r="4" fill="#ffd35c" ${s} stroke-width="1.3"/></svg>`,
-    glasses:`<svg viewBox="-24 -24 48 48"><g fill="rgba(255,255,255,.4)" stroke="#5a4646" stroke-width="2.4"><circle cx="-11" r="9.5"/><circle cx="11" r="9.5"/><path d="M-2.4 -1 Q0 -3.2 2.4 -1" fill="none"/><path d="M-20.5 -1h5M20.5 -1h-5" stroke-linecap="round"/></g></svg>`,
-    crown:`<svg viewBox="-24 -24 48 48"><path d="M-15 8 L-15 -6 L-7 1 L0 -13 L7 1 L15 -6 L15 8 Z" fill="#ffd35c" ${s}/><circle cy="-3" r="2.6" fill="#ff7aa2" ${s} stroke-width="1.4"/></svg>`,
-    headband:`<svg viewBox="-24 -24 48 48"><path d="M-17 5 Q0 -12 17 5" fill="none" stroke="#ff9dc0" stroke-width="7" stroke-linecap="round"/><circle cx="12" r="3.6" fill="#ff5c8a" ${s} stroke-width="1.4"/></svg>`,
-    bowtie:`<svg viewBox="-24 -24 48 48"><path d="M0 0 L-14 -8 L-14 8 Z M0 0 L14 -8 L14 8 Z" fill="#ffb3c6" ${s}/><rect x="-3.6" y="-3.6" width="7.2" height="7.2" rx="1.6" fill="#ff8fab" ${s} stroke-width="1.4"/></svg>`,
-    scarf:`<svg viewBox="-24 -24 48 48"><path d="M-16 -6 Q0 4 16 -6 L16 1 Q0 11 -16 1 Z" fill="#ffe3a3" ${s}/><rect x="-4" y="4" width="8" height="13" rx="2.4" fill="#ffd35c" ${s} stroke-width="1.4"/></svg>`,
-  }[id]||(PACC[id]?PACC[id].replace('<svg ','<svg class="pl" '):accIcon(id));
-}
+function badgeIcon(id){return paintedAccessoryIcon(id);}
 const LOCKICON='<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="3" fill="#fff" stroke="#8b93ad" stroke-width="1.8"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="#8b93ad" stroke-width="1.8" stroke-linecap="round"/></svg>';
 /* ---------- 꾸미기 탭: 고양이 / 액자 / 방 / 상점 ---------- */
 let decoTab='cat';

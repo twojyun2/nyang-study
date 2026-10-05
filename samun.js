@@ -352,6 +352,7 @@ function render(){
 /* ---------- 모의고사 점수 기록: 본 날짜·몇 번째·그래프 (2026-09-30 지연 피드백: 3월·6월·9월이 뒤죽박죽이라 언제 풀었는지 모름) ---------- */
 const mdText = d => { const dt = kToDate(d); return `${dt.getMonth()+1}월 ${dt.getDate()}일 (${WD[dt.getDay()]})`; };
 const mdShort = m => m.est ? (+m.d.split('-')[1])+'월' : (+m.d.split('-')[1])+'/'+(+m.d.split('-')[2]);
+const mockExamText = m => m.examYear && m.examMonth ? `${m.examYear}년 ${m.examMonth}월` : m.y && m.mo ? `${m.y}년 ${m.mo}월` : '';
 function mockCard(){
   const a = mockSorted(), n = a.length;
   let body;
@@ -363,9 +364,9 @@ function mockCard(){
       + (n >= 2 ? lineChart(a.map(m => ({v:m.sc, label:mdShort(m)})), {cuts}) : '')
       + `<div class="mocklist">` + a.map((m,i) => ({m,i})).reverse().map(({m,i}) => {
         const dd = i ? m.sc - a[i-1].sc : null;
-        return `<div class="mockrow ${i===n-1?'last':''}" data-t="${m.t}"><span class="mockn">${i+1}번째</span><b>${m.sc}점</b>${dd!==null?`<span class="mockd ${dd>0?'up':dd<0?'down':''}">${dd>0?'+':''}${dd}</span>`:''}`
-          + `<span class="md" style="margin-left:auto;text-align:right">${m.est ? `${+m.d.split('-')[1]}월 <span class="est">날짜 정하기</span>` : mdText(m.d)}${m.n ? ' · '+esc(m.n) : ''}</span></div>`;
-      }).join('') + `</div><p class="smsub" style="margin:8px 0 0">날짜순으로 정렬돼요. 누르면 날짜·점수를 고칠 수 있어요.</p>`;
+        return `<div class="mockrow ${i===n-1?'last':''}" data-t="${m.t}"><span class="mockn">${i+1}번째</span><b>${m.sc}점</b>${m.grade ? `<span class="mockgrade">${m.grade}등급</span>` : ''}${dd!==null?`<span class="mockd ${dd>0?'up':dd<0?'down':''}">${dd>0?'+':''}${dd}</span>`:''}`
+          + `<span class="md" style="margin-left:auto;text-align:right">${m.est ? `${+m.d.split('-')[1]}월 <span class="est">날짜 정하기</span>` : mdText(m.d)}${mockExamText(m) ? `<br>${mockExamText(m)} 시험` : ''}${m.n ? ' · '+esc(m.n) : ''}</span></div>`;
+      }).join('') + `</div><p class="smsub" style="margin:8px 0 0">날짜순으로 정렬돼요. 누르면 시험 연월·날짜·점수·등급을 고칠 수 있어요.</p>`;
   }
   const byDay = {}; st().hist.forEach(h => byDay[h.d] = h.sc);
   const days = Object.keys(byDay).sort().slice(-10);
@@ -374,7 +375,12 @@ function mockCard(){
 }
 function mockSheet(t){
   const ed = t != null ? st().mock.find(m => m.t === t) : null, today = dayOf();
+  const ey = ed?.examYear || ed?.y || +today.slice(0,4), em = ed?.examMonth || ed?.mo || +today.slice(5,7);
+  const years = Array.from({length: Math.max(+today.slice(0,4)+2,ey)-2000+1},(_,i)=>2000+i).reverse();
   openSheet(`<h3>${ed ? '모의고사 기록 고치기' : '모의고사 점수 기록'}</h3>
+    <div class="row" style="gap:12px"><div class="field" style="flex:1;min-width:0"><label for="mk-y">시험 연도</label><select class="inp" id="mk-y">${years.map(y=>`<option value="${y}" ${y===ey?'selected':''}>${y}년</option>`).join('')}</select></div><div class="field" style="flex:1;min-width:0"><label for="mk-mo">시험 월</label><select class="inp" id="mk-mo">${Array.from({length:12},(_,i)=>i+1).map(m=>`<option value="${m}" ${m===em?'selected':''}>${m}월</option>`).join('')}</select></div></div>
+    <p class="note">시험지의 연도·월을 골라주세요. 실제로 푼 날짜는 아래에 따로 기록해요.</p>
+    <div class="field"><label for="mk-g">등급 <span class="note">(선택)</span></label><select class="inp" id="mk-g"><option value="">미입력</option>${Array.from({length:9},(_,i)=>i+1).map(g=>`<option value="${g}" ${ed?.grade===g?'selected':''}>${g}등급</option>`).join('')}</select></div>
     <div class="field"><label>본 날짜 <span class="note">— 바꿀 수 있어요</span></label><input class="inp" id="mk-d" type="date" value="${ed ? ed.d : today}" max="${today}"></div>
     <div class="field"><label>원점수 <span class="note">/ 50점</span></label><input class="inp" id="mk-s" type="number" inputmode="numeric" min="0" max="50" placeholder="예: 38" value="${ed ? ed.sc : ''}"></div>
     <div class="field"><label>이름 <span class="note">(안 써도 돼요)</span></label><input class="inp" id="mk-n" maxlength="12" placeholder="예: 6월 모평" value="${ed && ed.n ? esc(ed.n) : ''}">
@@ -392,8 +398,10 @@ function mockSheet(t){
     if (!d){ toast('본 날짜를 골라줘'); return; }
     if (d > today){ toast('앞으로의 날은 기록할 수 없어요'); return; }
     if (raw === '' || !Number.isFinite(sc) || sc < 0 || sc > 50){ toast('점수는 0~50 사이로 입력해줘'); return; }
-    if (ed){ ed.d = d; ed.sc = sc; ed.n = nm; delete ed.est; }
-    else st().mock.push({d, sc, n:nm, t:now()});
+    const examYear=+$('#mk-y').value, examMonth=+$('#mk-mo').value, grade=$('#mk-g').value ? +$('#mk-g').value : null;
+    if (!years.includes(examYear) || examMonth<1 || examMonth>12 || (grade!==null && (!Number.isInteger(grade) || grade<1 || grade>9))){ toast('시험 연월과 등급을 확인해줘'); return; }
+    if (ed){ Object.assign(ed,{d,sc,n:nm,examYear,examMonth,grade}); delete ed.est; }
+    else st().mock.push({d,sc,n:nm,examYear,examMonth,grade,t:now()});
     save(); closeSheet(); render();
     toast(ed ? '고쳤어요!' : '기록했어요!');
   };

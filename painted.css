@@ -49,9 +49,13 @@
   #decoBody .note{overflow-wrap:anywhere}
   .rchip{max-width:100%;min-width:0;text-align:left}
 }
-/* The glasses are face-on artwork; the walking and sleeping sprites are in profile. */
-.painted-cat.walking .acc-glasses,.painted-cat.m-sleep .acc-glasses,.painted-cat.m-rest .acc-glasses{display:none!important}
-.painted-cat .acc-bell{transform:translateY(10px)}
-.painted-cat .acc-glasses{transform:translateX(-8px) scale(1.65)}
-.painted-cat.w-glasses.m-happy .paint-happy{display:none}
-.painted-cat.w-glasses.m-happy .paint-idle{display:inline}
+
+.mockrow{flex-wrap:wrap;gap:8px}.mockgrade{font-size:13px;background:#f8e5ed;border-radius:12px;padding:3px 8px;white-space:nowrap}
+
+/* Painted borders are shared by the worn photo and every store swatch. */
+.ph::before,.fsw::before{display:none}
+.ph::after,.fsw::after{content:"";position:absolute;inset:-7%;background-image:var(--frame-art);background-size:var(--frame-art-size);background-position:var(--frame-art-pos);background-repeat:no-repeat;border-radius:0;clip-path:none;pointer-events:none;z-index:2}
+.ph .pimg,.fsw .fsi{position:absolute;inset:var(--photo-inset,18%);width:auto;height:auto;border:0;border-radius:0;clip-path:var(--photo-mask);box-shadow:none}
+.ph .ftape{display:none}
+.ph .pacc{z-index:3}
+.fsw{width:76px;height:76px}

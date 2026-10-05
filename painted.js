@@ -28,13 +28,59 @@ RM_ITEMS.forEach(item => {
   item.svg=paintedSprite(core?'furniture.png':'seasonal.png',core?[1254,1254]:[1774,887],box.slice(0,4),'',clipShape);
 });
 
+const PAINTED_ACCESSORIES = {};
+[
+ ['a',['bow','bell','flower','glasses','crown','headband','bowtie','scarf'],[[50,108,365,286],[487,140,369,226],[938,128,341,222],[1320,150,436,188],[73,523,320,225],[469,480,394,305],[922,540,377,205],[1369,465,340,336]]],
+ ['b',['heartpin','garland','moon','ears','pearls','lace','wreath','santa'],[[83,201,290,153],[472,181,391,192],[991,189,250,177],[1353,119,389,283],[27,586,391,157],[453,588,428,165],[918,561,385,198],[1348,515,399,277]]],
+ ['c',['snowpin','bunny','saekdong','luckpouch','sakurapin','witch','pumpkinpin','pencil'],[[79,148,324,302],[483,81,369,369],[896,138,409,313],[1397,180,327,258],[47,537,370,290],[470,520,415,290],[963,602,305,190],[1378,630,349,130]]]
+].forEach(([sheet,ids,boxes])=>ids.forEach((id,i)=>PAINTED_ACCESSORIES[id]={file:`accessories-${sheet}.png`,size:[1774,887],box:boxes[i]}));
+function paintedAccessoryIcon(id){const a=PAINTED_ACCESSORIES[id];return a?paintedSprite(a.file,a.size,a.box):'';}
+// Head-local positions: x, y, width, height, tilt. Every pose shares the same artwork.
+const PAINTED_ACC_FIT={
+ bow:[8,-40,26,24,16],bell:[-23,22,46,23,0],flower:[-30,-36,25,18,-12],glasses:[-41,-18,82,37,0],
+ crown:[-19,-48,38,27,0],headband:[-28,-42,56,31,0],bowtie:[-18,24,36,20,0],scarf:[-25,22,50,33,0],
+ heartpin:[-31,-34,24,14,-14],garland:[-26,-30,52,24,0],moon:[10,-38,23,19,18],ears:[-33,-55,66,43,0],
+ pearls:[-23,26,46,18,0],lace:[-27,23,54,20,0],wreath:[-30,-39,60,27,0],santa:[-30,-58,60,44,0],
+ snowpin:[-30,-35,23,23,-12],bunny:[-28,-68,56,57,0],saekdong:[7,-42,29,25,15],luckpouch:[-15,24,30,27,0],
+ sakurapin:[-32,-38,30,25,-12],witch:[-32,-62,64,45,-6],pumpkinpin:[-31,-32,26,18,-12],pencil:[8,-31,27,12,25]
+};
+function paintedAccessories(pose){
+ const side=pose==='walk'||pose==='sleep';
+ return Object.entries(PAINTED_ACC_FIT).map(([id,fit])=>{
+  let [x,y,w,h,angle]=fit, art=paintedAccessoryIcon(id);
+  if(side){x=x*.7+(pose==='walk'?3:-3);w*=.78;angle+=pose==='walk'?-10:16;}
+  if(pose==='study')angle+=-8;
+  if(id==='glasses'&&pose==='walk'){art=paintedSprite('glasses-side.png',PAINTED_SIDE_SIZE,PAINTED_SIDE_BOX);x=-24;y=-15;w=60;h=30;angle=pose==='walk'?-8:12;}
+  if(id==='glasses'&&pose==='sleep'){art=paintedAccessoryIcon(id);x=-34;y=-16;w=68;h=32;angle=-12;}
+  const mirror='';
+  return `<g class="acc acc-${id}" transform="rotate(${angle} ${x+w/2} ${y+h/2})"><g transform="${mirror}">${art.replace('<svg ',`<svg x="${x}" y="${y}" width="${w}" height="${h}" `)}</g></g>`;
+ }).join('');
+}
+const paintedWearStyle=document.createElement('style');
+paintedWearStyle.textContent='.painted-cat .acc{display:none}'+Object.keys(PAINTED_ACCESSORIES).map(id=>`.w-${id} .acc-${id}{display:inline}`).join('');
+document.head.appendChild(paintedWearStyle);
+
 function paintedCatSVG(includeAccessories=true){
   const poses=[
-    ['idle',[48,87,421,420],[99,78,1.45]],
-    ['walk',[497,92,528,414],[142,90,1.25]],
-    ['sleep',[1044,169,487,350],[66,134,1.12]],
-    ['study',[22,523,493,441],[112,100,1.3]],
-    ['happy',[540,518,481,424],[99,78,1.45]],
+    ['idle',[48,87,421,420],[86.5,92,1.45]],
+    ['walk',[497,92,528,414],[144,108,1.25]],
+    ['sleep',[1044,169,487,350],[61,149,1.12]],
+    ['study',[22,523,493,441],[101,111,1.15]],
+    ['happy',[540,518,481,424],[86.5,92,1.45]],
   ];
-  return `<svg class="cat painted-cat" viewBox="0 0 200 200" aria-hidden="true" data-art-source="approved-character-sheet">${poses.map(([name,box,acc])=>`<g class="paint-pose paint-${name}"><g class="paint-art" ${name==='walk'?'transform="translate(200 0) scale(-1 1)"':''}>${paintedSprite('lemon-poses.png',[1536,1024],box).replace('<svg ','<svg width="200" height="200" preserveAspectRatio="xMidYMax meet" ')}</g>${includeAccessories?`<g class="paint-accessories" transform="translate(${acc[0]} ${acc[1]}) scale(${acc[2]})">${headSVG()}</g>`:''}</g>`).join('')}</svg>`;
+  return `<svg class="cat painted-cat" viewBox="0 0 200 200" aria-hidden="true" data-art-source="approved-character-sheet">${poses.map(([name,box,acc])=>`<g class="paint-pose paint-${name}"><g class="paint-art" ${name==='walk'?'transform="translate(200 0) scale(-1 1)"':''}>${paintedSprite('lemon-poses.png',[1536,1024],box).replace('<svg ','<svg width="200" height="200" preserveAspectRatio="xMidYMax meet" ')}</g>${includeAccessories?`<g class="paint-accessories" transform="translate(${acc[0]} ${acc[1]}) scale(${acc[2]})">${paintedAccessories(name)}</g>`:''}</g>`).join('')}</svg>`;
+}
+
+const PAINTED_SIDE_SIZE=[1774,887],PAINTED_SIDE_BOX=[60,198,1685,480];
+const PAINTED_FRAMES={};
+['basic','mint','butter','lav','tape','gold','pola','kraft','double','gingham','dots','stripe','wood','sakura','night','rose'].forEach((id,i)=>{
+ PAINTED_FRAMES[id]={file:'frames-a.png',size:[1254,1254],box:[[12,331,639,940][i%4],[23,316,606,896][Math.floor(i/4)],300,290]};
+});
+['circle','arch','heart','petal','badge','hex','window','museum','film','saekdong','candy','spooky'].forEach((id,i)=>{
+ PAINTED_FRAMES[id]={file:'frames-b.png',size:[1448,1086],box:[[20,35,346,337],[376,36,337,333],[711,41,386,329],[1103,47,334,321],[16,386,336,334],[380,397,333,301],[721,372,363,341],[1120,377,299,336],[28,760,325,261],[377,724,337,315],[711,738,382,287],[1094,712,348,326]][i]};
+});
+function paintedFrameVars(id){
+ const f=PAINTED_FRAMES[id]||PAINTED_FRAMES.basic,[x,y,w,h]=f.box,[sw,sh]=f.size;
+ const masks={circle:'circle(49% at 50% 50%)',candy:'circle(49% at 50% 50%)',museum:'ellipse(39% 49% at 50% 50%)',hex:'polygon(25% 0,75% 0,100% 50%,75% 100%,25% 100%,0 50%)',heart:'polygon(50% 97%,5% 52%,0 25%,10% 5%,30% 0,50% 18%,70% 0,90% 5%,100% 25%,95% 52%)',window:'inset(0 19% 0 19% round 45% 45% 0 0)',petal:'polygon(35% 4%,65% 4%,70% 25%,93% 30%,96% 53%,80% 66%,81% 90%,52% 100%,26% 88%,24% 68%,4% 54%,8% 30%,30% 24%)'};
+ return {'--frame-art':`url('${PAINTED_ROOT+f.file}')`,'--frame-art-size':`${sw/w*100}% ${sh/h*100}%`,'--frame-art-pos':`${x/(sw-w)*100}% ${y/(sh-h)*100}%`,'--photo-mask':masks[id]||'inset(0 round 15%)','--photo-inset':id==='heart'?'8% 7% 2%':id==='film'?'19% 6%':id==='spooky'?'30% 16% 12%':id==='pola'?'10% 10% 20%':'12%'};
 }

@@ -22,3 +22,9 @@
 - 이미지 원본의 투명도를 유지한다. 브라우저에서 배경 비침과 잘림을 확인한다.
 - `art-preview.html`은 실제 게임과 같은 원화를 사용하는 검수 화면이며, 보유 기록을 바꾸지 않는다.
 - 로컬 서버는 `/tmp/nyang-study-preview` 복사본을 제공하므로 수정 후 해당 폴더도 갱신한다.
+
+
+## Accessories and photo frames (2026-10-05)
+All 24 accessories now share three alpha PNG atlases; 28 photo frames share two alpha PNG atlases. The profile glasses use a separate illustration. `painted.js` holds crop boxes and pose-relative anchors; use these assets for shop icons, photo decorations, and drawn cats alike. Preserve item IDs and saved ownership when changing artwork.
+
+Reusable prompt: Match the approved furniture and accessory references: delicate warm cocoa hand-drawn contours, soft pastel watercolor with paper grain inside objects, rounded handmade shapes. Draw isolated game assets with actual alpha transparency outside each object and inside eyeglass lenses/photo frame openings. No text, no background, no solid lens fills, no heavy vector outline. Use an evenly spaced atlas with ample transparent margins and a supplied explicit row-by-row item order. Generate side-facing glasses separately; verify every pose, crop boundary, and frame hole in art-preview.html before release.
