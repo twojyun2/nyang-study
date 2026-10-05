@@ -35,6 +35,16 @@ const PAINTED_ACCESSORIES = {};
  ['c',['snowpin','bunny','saekdong','luckpouch','sakurapin','witch','pumpkinpin','pencil'],[[79,148,324,302],[483,81,369,369],[896,138,409,313],[1397,180,327,258],[47,537,370,290],[470,520,415,290],[963,602,305,190],[1378,630,349,130]]]
 ].forEach(([sheet,ids,boxes])=>ids.forEach((id,i)=>PAINTED_ACCESSORIES[id]={file:`accessories-${sheet}.png`,size:[1774,887],box:boxes[i]}));
 function paintedAccessoryIcon(id){const a=PAINTED_ACCESSORIES[id];return a?paintedSprite(a.file,a.size,a.box):'';}
+const PAINTED_WORN_NECK={};
+['bell','bowtie','scarf','pearls','lace','luckpouch'].forEach((id,i)=>{
+ const front=[[38,129,428,259],[560,135,422,240],[1073,128,428,327],[52,589,433,218],[532,583,479,212],[1068,579,424,336]][i];
+ const side=[[54,157,392,271],[555,162,435,268],[1069,162,431,319],[48,590,431,218],[548,585,473,243],[1077,576,428,350]][i];
+ PAINTED_WORN_NECK[id]={front:{file:'neck-front.png',size:[1536,1024],box:front},side:{file:'neck-profile.png',size:[1536,1024],box:side}};
+});
+const PAINTED_WORN_HEAD={};
+['headband','bunny','ears','crown','santa','witch'].forEach((id,i)=>PAINTED_WORN_HEAD[id]={file:'head-worn.png',size:[1536,1024],box:[[33,241,479,210],[512,48,461,403],[1060,201,440,250],[45,598,467,270],[512,564,512,304],[1024,561,497,315]][i]});
+const PAINTED_NECK_FIT={bell:[-23,14,46,27,0],bowtie:[-22,16,44,26,0],scarf:[-29,11,58,40,0],pearls:[-23,18,46,24,0],lace:[-25,16,50,24,0],luckpouch:[-18,17,36,37,0]};
+const PAINTED_HEAD_FIT={headband:[-38,-48,76,34,0],bunny:[-39,-65,78,62,0],ears:[-40,-56,80,47,0],crown:[-26,-56,52,32,0],santa:[-35,-61,70,46,0],witch:[-38,-64,76,47,-5]};
 // Head-local positions: x, y, width, height, tilt. Every pose shares the same artwork.
 const PAINTED_ACC_FIT={
  bow:[8,-40,26,24,16],bell:[-23,22,46,23,0],flower:[-30,-36,25,18,-12],glasses:[-41,-18,82,37,0],
@@ -47,13 +57,24 @@ const PAINTED_ACC_FIT={
 function paintedAccessories(pose){
  const side=pose==='walk'||pose==='sleep';
  return Object.entries(PAINTED_ACC_FIT).map(([id,fit])=>{
-  let [x,y,w,h,angle]=fit, art=paintedAccessoryIcon(id);
-  if(side){x=x*.7+(pose==='walk'?3:-3);w*=.78;angle+=pose==='walk'?-10:16;}
-  if(pose==='study')angle+=-8;
-  if(id==='glasses'&&pose==='walk'){art=paintedSprite('glasses-side.png',PAINTED_SIDE_SIZE,PAINTED_SIDE_BOX);x=-24;y=-15;w=60;h=30;angle=pose==='walk'?-8:12;}
-  if(id==='glasses'&&pose==='sleep'){art=paintedAccessoryIcon(id);x=-34;y=-16;w=68;h=32;angle=-12;}
-  const mirror='';
-  return `<g class="acc acc-${id}" transform="rotate(${angle} ${x+w/2} ${y+h/2})"><g transform="${mirror}">${art.replace('<svg ',`<svg x="${x}" y="${y}" width="${w}" height="${h}" `)}</g></g>`;
+  if(pose==='study'&&PAINTED_WORN_NECK[id])return '';// The open book hides the chest.
+  let [x,y,w,h,angle]=fit,asset=PAINTED_ACCESSORIES[id],art;
+  if(PAINTED_WORN_NECK[id]){
+    asset=PAINTED_WORN_NECK[id][pose==='walk'?'side':'front'];
+    [x,y,w,h,angle]=PAINTED_NECK_FIT[id];
+    if(pose==='walk'){x=-24;y=11;w=id==='luckpouch'?35:39;h=id==='scarf'?33:29;angle=-5;}
+    if(pose==='sleep'){x=-18;y=8;w=id==='scarf'?39:34;h=id==='luckpouch'?28:23;angle=-20;}
+  }else if(PAINTED_WORN_HEAD[id]){
+    asset=PAINTED_WORN_HEAD[id];
+    [x,y,w,h,angle]=PAINTED_HEAD_FIT[id];
+    if(pose==='walk'){x=x*.65+6;w*=.72;angle-=10;}
+    if(pose==='sleep'){x=x*.72-5;w*=.77;angle+=16;}
+  }else if(side){x=x*.7+(pose==='walk'?3:-3);w*=.78;angle+=pose==='walk'?-10:16;}
+  if(pose==='study')angle-=8;
+  if(id==='glasses'&&pose==='walk'){asset={file:'glasses-side.png',size:PAINTED_SIDE_SIZE,box:PAINTED_SIDE_BOX};x=-24;y=-15;w=60;h=30;angle=-8;}
+  if(id==='glasses'&&pose==='sleep'){asset=PAINTED_ACCESSORIES[id];x=-34;y=-16;w=68;h=32;angle=-12;}
+  art=paintedSprite(asset.file,asset.size,asset.box);
+  return `<g class="acc acc-${id}" transform="rotate(${angle} ${x+w/2} ${y+h/2})">${art.replace('<svg ',`<svg x="${x}" y="${y}" width="${w}" height="${h}" `)}</g>`;
  }).join('');
 }
 const paintedWearStyle=document.createElement('style');

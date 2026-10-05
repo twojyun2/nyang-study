@@ -28,3 +28,6 @@
 All 24 accessories now share three alpha PNG atlases; 28 photo frames share two alpha PNG atlases. The profile glasses use a separate illustration. `painted.js` holds crop boxes and pose-relative anchors; use these assets for shop icons, photo decorations, and drawn cats alike. Preserve item IDs and saved ownership when changing artwork.
 
 Reusable prompt: Match the approved furniture and accessory references: delicate warm cocoa hand-drawn contours, soft pastel watercolor with paper grain inside objects, rounded handmade shapes. Draw isolated game assets with actual alpha transparency outside each object and inside eyeglass lenses/photo frame openings. No text, no background, no solid lens fills, no heavy vector outline. Use an evenly spaced atlas with ample transparent margins and a supplied explicit row-by-row item order. Generate side-facing glasses separately; verify every pose, crop boundary, and frame hole in art-preview.html before release.
+
+## Worn accessory variants
+The source accessory icons represent objects for the shop. On the cat, neck-front.png and neck-profile.png replace floating full-loop collars with visible curved front sections, and head-worn.png makes bands follow the forehead. Front neckwear stays behind the open book in the study pose. Check each item at all five poses before altering anchors in painted.js.

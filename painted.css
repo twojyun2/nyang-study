@@ -59,3 +59,7 @@
 .ph .ftape{display:none}
 .ph .pacc{z-index:3}
 .fsw{width:76px;height:76px}
+
+.mock-chart-switch{display:flex;gap:6px;margin:14px 0 10px;padding:4px;background:#fff4f6;border-radius:14px}
+.mock-chart-switch button{flex:1;border:0;border-radius:11px;background:transparent;color:var(--soft);font:16px 'Jua',sans-serif;padding:8px 5px;cursor:pointer}
+.mock-chart-switch button.on{background:#fff;color:var(--pink-d);box-shadow:0 2px 6px #d9b6c344}

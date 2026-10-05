@@ -625,7 +625,7 @@ input[type=date].inp,input[type=time].inp{min-height:52px;font-family:'Jua',sans
   #decoStage{height:clamp(170px,24dvh,212px)}
 }
 </style>
-<link rel="stylesheet" href="painted.css?v=20261005g">
+<link rel="stylesheet" href="painted.css?v=20261005h">
 </head>
 <body>
 <div id="app">
@@ -811,8 +811,8 @@ input[type=date].inp,input[type=time].inp{min-height:52px;font-family:'Jua',sans
 
 <script src="record-safety.js?v=20261005f"></script>
 <script src="deco.js?v=20261004a"></script>
-<script src="painted.js?v=20261005g"></script>
-<script src="samun.js?v=20261005g"></script>   <!-- 버전 표시: index.html과 samun.js가 서로 다른 시점 것으로 섞이지 않게 -->
+<script src="painted.js?v=20261005h"></script>
+<script src="samun.js?v=20261005h"></script>   <!-- 버전 표시: index.html과 samun.js가 서로 다른 시점 것으로 섞이지 않게 -->
 <script>
 'use strict';
 /* =========================================================
@@ -1503,14 +1503,15 @@ function lineChart(pts,o={}){
   const W=340,H=o.h||200,L=28,R=42,T=24,B=30,step=o.step||5,vs=pts.map(p=>p.v),id='chg'+(++chartN);
   const lo=o.min!=null?o.min:Math.max(0,Math.floor((Math.min(...vs)-4)/step)*step);
   let hi=o.max!=null?o.max:Math.min(o.ceil||50,Math.ceil((Math.max(...vs)+3)/step)*step);if(hi-lo<step*2)hi=lo+step*2;
+  const shown=v=>o.displayValue?o.displayValue(v):v;
   const X=i=>pts.length===1?(L+W-R)/2:L+(W-L-R)*i/(pts.length-1),Y=v=>T+(H-T-B)*(1-(v-lo)/(hi-lo));
-  let g='';for(let v=lo;v<=hi;v+=step)g+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}"/><text class="yl" x="${L-5}" y="${Y(v)+4}">${v}</text>`;
+  let g='';for(let v=lo;v<=hi;v+=step)g+=`<line class="gl" x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}"/><text class="yl" x="${L-5}" y="${Y(v)+4}">${shown(v)}</text>`;
   (o.cuts||[]).filter(c=>c.v>lo&&c.v<hi).forEach(c=>g+=`<line class="cut" x1="${L}" x2="${W-R}" y1="${Y(c.v)}" y2="${Y(c.v)}"/><text class="cutl" x="${W-R+11}" y="${Y(c.v)+3}">${c.l}</text>`);
   const line=pts.map((p,i)=>(i?'L':'M')+X(i).toFixed(1)+' '+Y(p.v).toFixed(1)).join(' ');
   const best=Math.max(...vs),every=pts.length>9?Math.ceil(pts.length/8):1;
   return `<svg class="chart" viewBox="0 0 ${W} ${H}"><defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff8fab" stop-opacity=".32"/><stop offset="1" stop-color="#ff8fab" stop-opacity="0"/></linearGradient></defs>${g}
     ${pts.length>1?`<path class="ar" style="fill:url(#${id})" d="${line} L${X(pts.length-1)} ${Y(lo)} L${X(0)} ${Y(lo)}Z"/>`:''}<path class="ln" d="${line}"/>
-    ${pts.map((p,i)=>`<circle class="pt ${p.v===best&&pts.length>1?'best':''}" cx="${X(i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="5"/>${i%every===0||i===pts.length-1?`<text class="vl" x="${X(i).toFixed(1)}" y="${(Y(p.v)-10).toFixed(1)}">${p.v}</text><text class="xl" x="${X(i).toFixed(1)}" y="${H-10}">${p.label}</text>`:''}`).join('')}</svg>`;
+    ${pts.map((p,i)=>`<circle class="pt ${p.v===best&&pts.length>1?'best':''}" cx="${X(i).toFixed(1)}" cy="${Y(p.v).toFixed(1)}" r="5"/>${i%every===0||i===pts.length-1?`<text class="vl" x="${X(i).toFixed(1)}" y="${(Y(p.v)-10).toFixed(1)}">${shown(p.v)}</text><text class="xl" x="${X(i).toFixed(1)}" y="${H-10}">${p.label}</text>`:''}`).join('')}</svg>`;
 }
 function dayChart(t){
   const days=Array.from({length:14},(_,i)=>addDays(t,-13+i)),vals=days.map(minsOn),sum=vals.reduce((a,b)=>a+b,0);
