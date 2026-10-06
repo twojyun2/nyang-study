@@ -1,23 +1,23 @@
 /* Real illustration assets, shared by the room, shop and purchase preview. */
-.stage{background:#faf0dc var(--room-art,url('assets/painted/empty-room.png')) center/100% 100% no-repeat!important;isolation:isolate}
+.stage{background:#faf0dc var(--room-art,url('assets/painted/empty-room.png')) center/cover no-repeat!important;isolation:isolate}
 .stage::before{display:none}
 .stage .wall,.stage .floor,.stage .rug{display:none}
-#homeStage{height:clamp(300px,70vw,400px);margin:10px -16px 8px;border-radius:22px}
-#decoStage{height:clamp(300px,70vw,380px)}
-.stage.bpv{height:320px}
+#homeStage{height:auto;aspect-ratio:3/2;margin:10px -16px 8px;border-radius:22px}
+#decoStage{height:auto;aspect-ratio:3/2}
+.stage.bpv{height:auto;aspect-ratio:3/2}
 .painted-asset{overflow:hidden!important;display:block;width:100%;height:auto}
 .rmwrap{z-index:1}
 .ri-wallA{left:5%;top:7%}.ri-wallB{right:5%;top:7%}
 .ri-floorL{left:4%;bottom:5%}.ri-floorR{right:4%;bottom:5%}
 .ri-floorC{bottom:2%;z-index:0}
-.catwrap{width:160px;height:160px;bottom:20px;z-index:2}
-#decoStage .catwrap{width:160px;height:160px;bottom:22px}
+.catwrap{width:160px;height:160px;bottom:25%;z-index:2}
+#decoStage .catwrap{width:160px;height:160px;bottom:25%}
 #focus{overflow-y:auto}
-#focus .stage{flex:none;aspect-ratio:4/3;height:auto;min-height:0;max-width:760px;border-radius:22px}
+#focus .stage{flex:none;aspect-ratio:3/2;height:auto;min-height:0;max-width:760px;border-radius:22px}
 #focus .ring{flex:none}
 .bpcat{width:150px;height:150px;margin-left:-75px;bottom:18px;z-index:2}
 .mini{width:140px;height:140px}
-.bubble{bottom:195px;z-index:4}
+.bubble{bottom:calc(25% + 150px);z-index:4}
 .painted-cat .paint-pose{display:none}
 .painted-cat .paint-idle{display:inline}
 .painted-cat .paint-idle .paint-art,.painted-cat .paint-happy .paint-art{transform:scale(.83);transform-origin:100px 200px}
@@ -45,20 +45,28 @@
 .room-levels{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:10px;margin:12px 0 16px}
 .room-level{border:2px solid #f1dce2;border-radius:16px;overflow:hidden;background:#fff;text-align:center;padding-bottom:8px}
 .room-level.on{border-color:#dba2ac}
-.room-level-art{width:100%;aspect-ratio:4/3;background:#f8f2e7 center/100% 100% no-repeat}
+.room-level-art{width:100%;aspect-ratio:3/2;background:#f8f2e7 center/cover no-repeat}
 .room-level b,.room-level small{display:block;font-family:'Jua',sans-serif}.room-level b{font-size:15px;margin-top:5px}.room-level small{font-size:12px;color:#a28c8d}
 .room-upgrade{width:100%;max-width:440px}
+.deco-more{margin-top:18px;border:2px solid #f1dce2;border-radius:17px;background:#fff;overflow:hidden}
+.deco-more summary{cursor:pointer;list-style:none;padding:15px 16px;font-family:'Jua',sans-serif;font-size:17px;color:#70584f;display:flex;justify-content:space-between;gap:8px}
+.deco-more summary::-webkit-details-marker{display:none}
+.deco-more summary span{font-size:13px;color:#a28c8d}
+.deco-more[open] .rooms{padding:0 12px 12px;margin:0}
+.roomb .need small{display:block;font-size:11px;color:#a28c8d;margin-top:3px}
+#rms,#frs{grid-template-columns:repeat(auto-fill,minmax(min(180px,100%),220px))}
 .rchip .painted-asset{width:48px;height:48px;object-fit:contain}
 .banner .painted-asset{width:52px;max-height:60px}
-.swr,.roomb .swr{background:var(--room-preview,url('assets/painted/empty-room.png')) center/100% 100% no-repeat}
+.swr,.roomb .swr{height:auto;aspect-ratio:3/2;background:var(--room-preview,url('assets/painted/empty-room.png')) center/cover no-repeat}
 @media(min-width:900px){
-  #homeStage{height:clamp(400px,calc(100vh / var(--zm) - 90px),560px);margin:0}
-  #decoStage{height:340px}
-  #focus.on{display:grid;grid-template-columns:minmax(240px,300px) minmax(0,980px);grid-template-rows:auto auto 1fr auto;column-gap:28px;justify-content:center;justify-items:center;align-items:center}
+  #app{max-width:1200px}
+  #homeStage{height:auto;aspect-ratio:3/2;margin:0}
+  #decoStage{height:auto;aspect-ratio:3/2}
+  #focus.on{display:grid;grid-template-columns:minmax(240px,300px) minmax(0,980px);grid-template-rows:auto auto minmax(0,1fr) auto;column-gap:28px;justify-content:center;justify-items:center;align-items:center}
   #focus .fsub{grid-column:1;grid-row:1;align-self:end}
   #focus .ring{grid-column:1;grid-row:2;margin:12px 0}
   #focus .fline{grid-column:1;grid-row:3;align-self:start;max-width:300px}
-  #focus .stage{grid-column:2;grid-row:1/4;width:min(100%,980px,calc((100vh - 150px) * 1.333333));max-width:980px;max-height:none;align-self:center}
+  #focus .stage{grid-column:2;grid-row:1/4;width:min(100%,980px,calc((100dvh - 210px) * 1.5));max-width:980px;max-height:none;align-self:center}
   #focus .calmwrap{grid-column:2;grid-row:1/4}
   #focus .fbtns{grid-column:1/-1;grid-row:4;max-width:520px;margin-top:12px}
 }
@@ -69,11 +77,12 @@
   #focus .stage{width:100%;max-height:none}
   #focus .fbtns{margin-top:12px}
 }
+#focus .fbtns{position:sticky;bottom:0;z-index:8;padding:8px 0;background:var(--bg)}
 @media(prefers-reduced-motion:reduce){.painted-cat .paint-pose{animation:none!important}}
 
 /* The decoration panel must fit inside its desktop column at every zoom level. */
 @media(min-width:900px){
-  .decogrid{grid-template-columns:minmax(0,340px) minmax(0,1fr);max-width:100%}
+  .decogrid{grid-template-columns:minmax(0,54%) minmax(0,1fr);max-width:100%}
   .decogrid>*,#decoBody,#slots{min-width:0}
   .rooms{grid-template-columns:repeat(auto-fit,minmax(min(150px,100%),1fr))}
   #decoBody .note{overflow-wrap:anywhere}

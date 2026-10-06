@@ -625,7 +625,7 @@ input[type=date].inp,input[type=time].inp{min-height:52px;font-family:'Jua',sans
   #decoStage{height:clamp(170px,24dvh,212px)}
 }
 </style>
-<link rel="stylesheet" href="painted.css?v=20261006b">
+<link rel="stylesheet" href="painted.css?v=20261006c">
 </head>
 <body>
 <div id="app">
@@ -711,7 +711,7 @@ input[type=date].inp,input[type=time].inp{min-height:52px;font-family:'Jua',sans
       <div class="dl"><div class="preview stage" id="decoStage"><div class="wall"></div><div class="floor"></div><div class="rug"></div></div></div>
       <div class="dr">
         <div id="decoBanner"></div>
-        <div class="seg" id="decoSeg"><button data-t="cat">고양이</button><button data-t="frame">액자</button><button data-t="room">방</button><button data-t="shop">상점</button></div>
+        <div class="seg" id="decoSeg"><button data-t="cat">고양이</button><button data-t="frame">액자</button><button data-t="room">방</button></div>
         <div id="decoBody"></div>
       </div>
     </div>
@@ -1576,7 +1576,7 @@ function accIcon(id){return `<svg class="cat" viewBox="-40 -48 80 80">${headSVG(
 const ICONLINE='stroke="#5a4646" stroke-width="1.8" stroke-linejoin="round" stroke-linecap="round"';
 function badgeIcon(id){return paintedAccessoryIcon(id);}
 const LOCKICON='<svg viewBox="0 0 24 24"><rect x="5" y="11" width="14" height="9" rx="3" fill="#fff" stroke="#8b93ad" stroke-width="1.8"/><path d="M8 11V8a4 4 0 0 1 8 0v3" fill="none" stroke="#8b93ad" stroke-width="1.8" stroke-linecap="round"/></svg>';
-/* ---------- 꾸미기 탭: 고양이 / 액자 / 방 / 상점 ---------- */
+/* ---------- 꾸미기 탭: 고양이 / 액자 / 방 ---------- */
 let decoTab='cat';
 const daysN=()=>studyDays().length;
 const accOwned=a=>a.need!=null?daysN()>=a.need:S.bought.includes(a.id);
@@ -1595,7 +1595,7 @@ function renderDeco(){
   $('#decoBanner').innerHTML=seasonFree().map(({k,it})=>`<div class="banner"><div class="bi">${k==='item'?it.svg:PACC[it.id]}</div><div><b>${THEME_BY[it.theme].n} 무료 선물</b><span>${it.n}</span></div><button class="btn sub" data-fk="${k}" data-fid="${it.id}" style="color:#fff">받기</button></div>`).join('');
   $('#decoBanner').querySelectorAll('[data-fk]').forEach(b=>b.onclick=()=>buyItem(b.dataset.fk,LOOK[b.dataset.fk](b.dataset.fid),true));
   $('#decoSeg').querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.t===decoTab);b.onclick=()=>{decoTab=b.dataset.t;renderDeco()}});
-  ({cat:tabCat,frame:tabFrame,room:tabRoom,shop:tabShop})[decoTab]();
+  ({cat:tabCat,frame:tabFrame,room:tabRoom})[decoTab]();
 }
 function tabCat(){
   const themes=[['basic','기본 고양이'],['halloween','할로윈 고양이'],['chuseok','한가위 고양이'],['seollal','설날 고양이'],['christmas','크리스마스 고양이'],['spring','벚꽃 고양이']];
@@ -1607,23 +1607,34 @@ function tabCat(){
   $('#looks').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.look=b.dataset.l;save();[homeCat,focusCat,decoCat].forEach(c=>c.setMood(c.mood));renderDeco()});
 }
 const frameSwatch=f=>`<div class="fsw" style="${frameStyle(f)}"><div class="fsi"></div></div>`;
-const roomSwatch=r=>`<div class="swr" style="--room-preview:url('${roomArtPath(r.id,roomLevel(r.id))}')"></div>`;
+const roomSwatch=(r,preview=false)=>`<div class="swr" style="--room-preview:url('${roomArtPath(r.id,preview?5:roomLevel(r.id))}')"></div>`;
+const decoBalance=()=>`<div class="bal"><svg viewBox="0 0 24 24"><use href="#i-churu"/></svg><span>츄르 ${S.churu}개</span></div>`;
+const buyableCard=(kind,it)=>{
+  return `<button class="roomb ${kind==='frame'?'fr':''}" data-buy-${kind}="${it.id}">${kind==='frame'?frameSwatch(it):roomSwatch(it,true)}<span class="rn">${it.n}</span><div class="need"><span class="cost"><svg viewBox="0 0 24 24"><use href="#i-churu"/></svg>${it.cost}</span>${kind==='room'?'<small>완성 모습 미리보기</small>':''}</div></button>`;
+};
 function tabFrame(){
-  $('#decoBody').innerHTML=`<h3>내 액자 <span class="note">— 모양이 다른 액자는 상점에서</span></h3>${S.look!=='photo'?'<p class="note" style="margin:-4px 0 10px">액자는 사진 냥이 모습일 때 보여요</p>':''}<div class="rooms" id="frs"></div>`;
+  const available=FRAMES.filter(f=>!frameOwned(f));
+  $('#decoBody').innerHTML=`<div class="shopbar"><h3 style="margin:0">액자</h3>${decoBalance()}</div>${S.look!=='photo'?'<p class="note" style="margin:0 0 12px">액자는 사진 냥이 모습일 때 보여요.</p>':''}
+    <h3>내 액자</h3><div class="rooms" id="frs"></div>
+    ${available.length?`<details class="deco-more"><summary>새 액자 구경하고 구매하기 <span>${available.length}종</span></summary><div class="rooms" id="frameStore">${available.map(f=>buyableCard('frame',f)).join('')}</div></details>`:''}`;
   $('#frs').innerHTML=FRAMES.filter(frameOwned).map(f=>{const on=S.frame===f.id;
     return `<button class="roomb fr ${on?'on':''}" data-f="${f.id}">${frameSwatch(f)}<span class="rn">${f.n}</span><div class="need">${on?'적용 중':'눌러서 적용'}</div></button>`}).join('');
   $('#frs').querySelectorAll('.roomb').forEach(b=>b.onclick=()=>{S.frame=b.dataset.f;applyFrame();afterDeco();decoCat.hearts(3);decoCat.face('pet',1000)});
+  $('#frameStore')?.querySelectorAll('[data-buy-frame]').forEach(b=>b.onclick=()=>buySheet('frame',FRAMES.find(f=>f.id===b.dataset.buyFrame),false));
 }
 function tabRoom(){
   const level=roomLevel(),next=level+1,rm=ROOMS.find(r=>r.id===S.room)||ROOMS[0];
-  $('#decoBody').innerHTML=`<p class="note" style="margin:0 0 14px">빈 방에서 시작해, 같은 그림에 물품이 하나씩 늘어나는 5단계 방이에요. 배치는 그림에 포함되어 있어요.</p><h3>방 테마</h3><div class="rooms" id="rms"></div>
+  const available=ROOMS.filter(r=>!roomOwned(r));
+  $('#decoBody').innerHTML=`<div class="shopbar"><h3 style="margin:0">방</h3>${decoBalance()}</div><p class="note" style="margin:0 0 14px">테마를 고른 뒤 빈 방부터 5단계까지 채워요. 물품은 방 그림에 포함돼요.</p><h3>내 방</h3><div class="rooms" id="rms"></div>
     <h3 style="margin-top:18px">${rm.n} · ${level}/5단계</h3><div class="room-levels" id="roomLevels"></div>
-    ${next<=5?`<button class="btn room-upgrade" id="roomUpgrade">${next}단계로 업그레이드 · 츄르 ${ROOM_LEVEL_COST[next]}개</button>`:'<p class="note">완성된 방이에요!</p>'}`;
+    ${next<=5?`<button class="btn room-upgrade" id="roomUpgrade">${next}단계로 업그레이드 · 츄르 ${ROOM_LEVEL_COST[next]}개</button>`:'<p class="note">완성된 방이에요!</p>'}
+    ${available.length?`<h3 style="margin-top:22px">새 방 테마</h3><p class="note">완성 모습을 미리 볼 수 있어요. 구매하면 빈 방에서 시작해요.</p><div class="rooms" id="roomStore">${available.map(r=>buyableCard('room',r)).join('')}</div>`:''}`;
   $('#rms').innerHTML=ROOMS.filter(roomOwned).map(r=>{const on=S.room===r.id;
     return `<button class="roomb ${on?'on':''}" data-r="${r.id}">${roomSwatch(r)}<span class="rn">${r.n}</span><div class="need">${on?'적용 중':'눌러서 적용'}</div></button>`}).join('');
   $('#rms').querySelectorAll('.roomb').forEach(b=>b.onclick=()=>{S.room=b.dataset.r;applyRoom();afterDeco();decoCat.hearts(3);decoCat.face('pet',1000)});
   $('#roomLevels').innerHTML=Array.from({length:6},(_,step)=>`<div class="room-level ${step===level?'on':''}"><div class="room-level-art" style="background-image:url('${roomArtPath(rm.id,step)}')"></div><b>${step===0?'빈 방':step+'단계'}</b><small>${step<=level?'보유 중':step===next?'다음 업그레이드':'잠겨 있어요'}</small></div>`).join('');
   if(next<=5)$('#roomUpgrade').onclick=()=>buyRoomUpgrade(rm,next);
+  $('#roomStore')?.querySelectorAll('[data-buy-room]').forEach(b=>b.onclick=()=>buySheet('room',ROOMS.find(r=>r.id===b.dataset.buyRoom),false));
 }
 function buyRoomUpgrade(rm,step){
   if(S.room!==rm.id||roomLevel(rm.id)+1!==step)return;
@@ -1637,46 +1648,13 @@ function buyRoomUpgrade(rm,step){
     closeModal();applyRoom();afterDeco();decoCat.hearts(5);toast(`${rm.n} ${step}단계가 되었어요!`);
   };
 }
-/* 상점: 테마별로 방·가구·장식·액자를 한자리에. 지금 철인 테마가 맨 앞. */
-function shopSections(){
-  const order=['study','play'],late=['deco','frame','color'];
-  const now=THEMES.filter(t=>inSeason(t)),rest=THEMES.filter(t=>t.season&&!inSeason(t));
-  return [...now,...THEMES.filter(t=>order.includes(t.id)),...THEMES.filter(t=>late.includes(t.id)),...rest];
-}
-function shopTile(k,it){
-  const own=ownedBy(k,it),free=!own&&seasonGiftAvailable(it),can=free||S.churu>=it.cost;
-  const foot=own?'보유 중':free?'<span class="cost free">이번 철 무료</span>':`<span class="cost"><svg viewBox="0 0 24 24"><use href="#i-churu"/></svg>${it.cost}</span>`;
-  const cls=own?'':('buy '+(can?'':'cant'));
-  if(k==='room')return `<button class="roomb ${own?'':(can?'':'cant')}" data-k="room" data-id="${it.id}">${roomSwatch(it)}<span class="rn">${it.n}</span><div class="need">${foot}</div></button>`;
-  if(k==='frame')return `<button class="roomb fr ${own?'':(can?'':'cant')}" data-k="frame" data-id="${it.id}">${frameSwatch(it)}<span class="rn">${it.n}</span><div class="need">${foot}</div></button>`;
-  const icon=k==='item'?`<div class="accplate ri-plate" style="--pc:#fff5f8">${it.svg}</div>`:`<div class="accplate">${badgeIcon(it.id)}</div>`;
-  const sub=k==='item'?RM_SLOT_N[it.slot]:slotLabel(it.slot);
-  return `<button class="accb ${cls}" data-k="${k}" data-id="${it.id}" style="--pc:${it.pc||'#fff2cf'}">${icon}${it.n}<div class="need">${foot}</div><div class="need slotn">${sub}</div></button>`;
-}
-function tabShop(){
-  const secs=shopSections();
-  const built=secs.map(th=>{
-    const tiles=[...ROOMS.filter(r=>r.theme===th.id&&r.cost>0).map(r=>shopTile('room',r)),
-      ...SHOP_ACC.filter(a=>a.theme===th.id).map(a=>shopTile('acc',a)),
-      ...FRAMES.filter(f=>f.theme===th.id&&f.cost>0).map(f=>shopTile('frame',f))];
-    if(!tiles.length)return null;
-    return {th,html:`<h3 class="shh" id="sh-${th.id}">${th.n}${inSeason(th)?' <em>지금 시즌</em>':th.season?` <span class="note" style="font-size:13px">${th.season[0][0].slice(5).replace('-','/')}쯤</span>`:''}</h3><div class="accs">${tiles.join('')}</div>`}}).filter(Boolean);
-  const body=built.map(b=>b.html).join('');
-  $('#decoBody').innerHTML=`<div class="shopbar"><h3 style="margin:0">상점</h3><div class="bal"><svg viewBox="0 0 24 24"><use href="#i-churu"/></svg><span>${S.churu}</span></div></div>
-    <div class="thnav">${built.map(({th:t})=>`<button class="${inSeason(t)?'now':''}" data-th="${t.id}">${t.n}</button>`).join('')}</div>${body}`;
-  $('#decoBody').querySelectorAll('.thnav button').forEach(b=>b.onclick=()=>{const e=document.getElementById('sh-'+b.dataset.th);e&&e.scrollIntoView({behavior:'smooth',block:'start'})});
-  $('#decoBody').querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>{
-    const k=b.dataset.k,it=LOOK[k](b.dataset.id);
-    if(ownedBy(k,it)){decoTab={acc:'cat',frame:'frame',room:'room',item:'room'}[k];renderDeco();toast(it.n+' — 이미 있어요. 여기서 바꿔요');return}
-    buySheet(k,it,!!seasonGiftAvailable(it))});
-}
-/* 상점은 누르자마자 사지 않는다: 미리보기 → '구매하기'를 한 번 더 눌러야 산다.
+/* 액자·방 목록에서 누르자마자 사지 않는다: 미리보기 → '구매하기'를 한 번 더 눌러야 산다.
    (2026-09-28 지연 피드백 — 액자 미리 보려고 눌렀다가 12츄르가 바로 나감) */
 function previewHTML(kind,it){
   const rm=kind==='room'?it:(ROOMS.find(x=>x.id===S.room)||ROOMS[0]);
   const fr=kind==='frame'?it:(FRAMES.find(x=>x.id===S.frame)||FRAMES[0]);
   const photo=S.look==='photo'||kind==='frame';
-  const vars=`--room-art:url('${roomArtPath(rm.id,roomLevel(rm.id))}');--room-wall:${rm.wall};--room-floor1:${rm.f1};--room-floor2:${rm.f2};--room-border:${rm.bd};--room-rug:${rm.rug};${frameStyle(fr)}`;
+  const vars=`--room-art:url('${roomArtPath(rm.id,kind==='room'&&!roomOwned(rm)?5:roomLevel(rm.id))}');--room-wall:${rm.wall};--room-floor1:${rm.f1};--room-floor2:${rm.f2};--room-border:${rm.bd};--room-rug:${rm.rug};${frameStyle(fr)}`;
   const cat=photo?stickerHTML('happy'):catSVG().replace('class="cat painted-cat"','class="cat painted-cat happyface"');
   return `<div class="stage bpv" style="${vars}"><div class="wall"></div><div class="floor"></div><div class="rug"></div>
     <div class="bpcat ${photo?'photo':''}">${cat}</div></div>`;
@@ -1689,6 +1667,7 @@ function buySheet(kind,it,free){
     <div class="bpcost"><svg viewBox="0 0 24 24"><use href="#i-churu"/></svg>${free?'무료 선물':cost}</div>
     <p class="note" style="margin:10px 0 0">${free?'이번 철에만 무료로 받아요':can?`지금 츄르 ${S.churu}개 → 사고 나면 ${S.churu-cost}개`:`츄르가 ${cost-S.churu}개 모자라요. 조금만 더 모아 봐요!`}</p>
     ${note?`<p class="note" style="margin:4px 0 0">${note}</p>`:''}
+    ${kind==='room'?'<p class="note" style="margin:4px 0 0">완성 모습 미리보기예요. 구매 후에는 빈 방 0단계부터 채워요.</p>':''}
     ${kind==='frame'&&S.look!=='photo'?'<p class="note" style="margin:4px 0 0">액자는 사진 냥이 모습일 때 보여요</p>':''}
     ${kind==='acc'&&S.look!=='photo'&&!DRAW_ACC.includes(it.id)?'<p class="note" style="margin:4px 0 0">이 장식은 사진 냥이 모습일 때 보여요</p>':''}
     ${can?`<div class="row" style="margin-top:16px"><button class="btn sub ghost" id="bp-no">${free?'나중에':'안 살래요'}</button><button class="btn sub" id="bp-yes" style="color:#fff">${free?'받기':'구매하기'}</button></div>`
