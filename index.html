@@ -625,7 +625,7 @@ input[type=date].inp,input[type=time].inp{min-height:52px;font-family:'Jua',sans
   #decoStage{height:clamp(170px,24dvh,212px)}
 }
 </style>
-<link rel="stylesheet" href="painted.css?v=20261005h">
+<link rel="stylesheet" href="painted.css?v=20261006b">
 </head>
 <body>
 <div id="app">
@@ -809,9 +809,9 @@ input[type=date].inp,input[type=time].inp{min-height:52px;font-family:'Jua',sans
   </defs>
 </svg>
 
-<script src="record-safety.js?v=20261005f"></script>
+<script src="record-safety.js?v=20261006b"></script>
 <script src="deco.js?v=20261004a"></script>
-<script src="painted.js?v=20261005h"></script>
+<script src="painted.js?v=20261006b"></script>
 <script src="samun.js?v=20261005h"></script>   <!-- 버전 표시: index.html과 samun.js가 서로 다른 시점 것으로 섞이지 않게 -->
 <script>
 'use strict';
@@ -884,6 +884,10 @@ const FRAMES=[   // 츄르로 사는 사진 냥이 액자
 /* ---------- 2026-09-30 개편 2: deco.js 의 새 아이템을 합치고, 고양이 장식에 '자리'를 준다 ----------
    같은 자리(왼쪽 위·오른쪽 위·위 가운데·왼쪽 아래·오른쪽 아래·아래 가운데)에는 하나만 달린다. 새로 달면 그 자리 것이 벗겨진다. */
 SHOP_ACC.push(...ACC_NEW);
+const RETIRED_ACC_COSTS=Object.fromEntries(SHOP_ACC.map(a=>[a.id,a.cost]));
+const RETIRED_FURNITURE_COSTS=Object.fromEntries(RM_ITEMS.map(i=>[i.id,i.cost||0]));
+const ROOM_LEVEL_COST=[0,8,10,12,14,16];
+ACCS.length=0;SHOP_ACC.length=0;
 const OLD_SLOTS={bow:['tr'],bell:['bottom'],flower:['tl'],glasses:['br'],crown:['top'],headband:['top'],bowtie:['bottom'],scarf:['bottom'],
   heartpin:['tl'],garland:['tl','top','tr'],moon:['tr'],ears:['top'],pearls:['bottom','bl','br'],lace:['tl','top','tr'],wreath:['bl']};
 [...ACCS,...SHOP_ACC].forEach(a=>{if(OLD_SLOTS[a.id])a.slot=OLD_SLOTS[a.id];a.theme=a.theme||'deco'});
@@ -944,12 +948,12 @@ ACC_NEW.forEach(a=>PACC[a.id]=a.svg);
 Object.keys(PAINTED_ACCESSORIES).forEach(id=>PACC[id]=paintedAccessoryIcon(id));
 {const st=document.createElement('style');st.textContent=ACC_NEW.map(a=>`.w-${a.id} .pacc.${a.id}{display:block;${a.pos}}`).join('\n');document.head.appendChild(st)}
 function stickerHTML(kind){const id=pick(PHOTOS[kind]||PHOTOS.happy);
-  return `<div class="ph"><div class="pimg" style="background-image:url(${photoUrl(id)})"></div><div class="ftape a"></div><div class="ftape b"></div>${Object.entries(PACC).map(([k,v])=>`<div class="pacc ${k}">${v}</div>`).join('')}</div>`}
+  return `<div class="ph"><div class="pimg" style="background-image:url(${photoUrl(id)})"></div><div class="ftape a"></div><div class="ftape b"></div></div>`}
 
 /* ---------- 저장 ---------- */
 let S=load();
 let savedState=RecordSafety.clone(S);
-function defaultsS(){return {v:1,me:'',cat:'',fur:'cheese',look:'draw',dday:defaultDday(),sessions:[],rests:[],churu:0,wear:[],seenAcc:[],run:null,push:null,created:Date.now(),bought:[],room:'basic',roomBought:['basic'],frame:'basic',frameBought:['basic'],shopFix:0,album:[],albumInit:0,calm:0,churuFix:0,rmBought:[],rm:{wallA:null,wallB:null,floorC:null,floorL:null,floorR:null},seasonSeen:[],roomArtV2:1};}
+function defaultsS(){return {v:1,me:'',cat:'',fur:'cheese',look:'draw',catTheme:'basic',accessoryRefundV:1,roomUpgradeV:1,roomLevels:{basic:0},dday:defaultDday(),sessions:[],rests:[],churu:0,wear:[],seenAcc:[],run:null,push:null,created:Date.now(),bought:[],room:'basic',roomBought:['basic'],frame:'basic',frameBought:['basic'],shopFix:0,album:[],albumInit:0,calm:0,churuFix:0,rmBought:[],rm:{wallA:null,wallB:null,floorC:null,floorL:null,floorR:null},seasonSeen:[],roomArtV2:1};}
 function normalizeState(s){
   const next={...defaultsS(),...s,rm:{...defaultsS().rm,...s.rm}};
   for(const key of ['sessions','rests','wear','seenAcc','bought','roomBought','frameBought','album','rmBought','seasonSeen'])
@@ -957,7 +961,10 @@ function normalizeState(s){
   // 예전 버전의 무료 기본 창문은 소유 목록에 없으면 방에서 제거한다.
   if(next.rm.wallB==='window'&&!next.rmBought.includes('window'))next.rm.wallB=null;
   if(!s.roomArtV2){next.look='draw';next.roomArtV2=1;}
-  return RecordSafety.upgradeStudyRewards(next);
+  if(s.accessoryRefundV!==1)next.accessoryRefundV=0;
+  if(s.roomUpgradeV!==1)next.roomUpgradeV=0;
+  if(!next.roomLevels||typeof next.roomLevels!=='object'||Array.isArray(next.roomLevels))next.roomLevels={basic:0};
+  return RecordSafety.refundRetiredFurniture(RecordSafety.refundRetiredAccessories(RecordSafety.upgradeStudyRewards(next),RETIRED_ACC_COSTS),RETIRED_FURNITURE_COSTS);
 }
 function backupState(state,reason){RecordSafety.backup(localStorage,KEY,state,reason)}
 function load(){
@@ -965,7 +972,7 @@ function load(){
   if(!raw)return defaultsS();
   // Fail closed: damaged or full storage must never silently become an empty account.
   try{const s=JSON.parse(raw);if(s?.v!==1)throw new Error('기록 버전 확인 필요');
-    if(!s.roomArtV2||s.studyRewardV!==2)backupState(s,'그림·츄르 업데이트 전');return normalizeState(s);
+    if(!s.roomArtV2||s.studyRewardV!==2||s.accessoryRefundV!==1||s.roomUpgradeV!==1)backupState(s,'그림·츄르 업데이트 전');return normalizeState(s);
   }catch(e){alert('기존 기록을 안전하게 불러오지 못했어요. 저장 공간을 확인하고 다시 열어 주세요. 기존 기록은 지우지 마세요.');throw e}
 }
 function persistState(){localStorage.setItem(KEY,JSON.stringify(S));savedState=RecordSafety.clone(S)}
@@ -1062,13 +1069,15 @@ function headSVG(){
   <g class="acc acc-bowtie" transform="translate(0 19)"><path d="M0 0 L-9 -5 L-9 5 Z M0 0 L9 -5 L9 5 Z" fill="#ffb3c6" stroke="#5a4646" stroke-width="1.6" stroke-linejoin="round"/><rect x="-2.5" y="-2.5" width="5" height="5" rx="1.2" fill="#ff8fab" stroke="#5a4646" stroke-width="1.2"/></g>
   <g class="acc acc-scarf" transform="translate(0 24)"><path d="M-16 -3 Q0 6 16 -3 L16 3 Q0 12 -16 3 Z" fill="#ffe3a3" stroke="#5a4646" stroke-width="1.6" stroke-linejoin="round"/><rect x="-3" y="6" width="6" height="11" rx="2" fill="#ffd35c" stroke="#5a4646" stroke-width="1.4"/></g>
 </g>`}
-function catSVG(){return paintedCatSVG()}
+function catSVG(theme=S.catTheme){return paintedCatSVG(theme)}
 const st=document.createElement('style');st.textContent='@keyframes breath{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.04)}}';document.head.appendChild(st);
 
 function applyFur(){const f=FURS[S.fur]||FURS.cheese;const r=document.documentElement.style;
   r.setProperty('--fur',f.fur);r.setProperty('--p1',f.p1);r.setProperty('--p2',f.p2);r.setProperty('--tail',f.tail)}
+function roomArtPath(id,level=0){return `assets/painted/room-${id==='halloroom'?'halloween':id}-${level}.webp`}
+function roomLevel(id=S.room){return Math.max(0,Math.min(5,Number(S.roomLevels?.[id])||0))}
 function applyRoom(){const rm=ROOMS.find(x=>x.id===S.room)||ROOMS[0];const r=document.documentElement.style;
-  r.setProperty('--room-art',`url('assets/painted/${rm.id==='basic'?'empty-room.png':'room-'+rm.id+'.jpg'}')`);
+  r.setProperty('--room-art',`url('${roomArtPath(rm.id,roomLevel(rm.id))}')`);
   r.setProperty('--room-wall',rm.wall);r.setProperty('--room-tint',rm.id==='basic'?'transparent':rm.wall);r.setProperty('--room-floor1',rm.f1);r.setProperty('--room-floor2',rm.f2);
   r.setProperty('--room-border',rm.bd);r.setProperty('--room-rug',rm.rug)}
 function frameVars(f){return {...paintedFrameVars(f.id),'--frame-bd':f.bd,'--frame-bg':f.bg,'--frame-tape':f.tape,'--frame-ring':f.ring||'none','--frame-r':f.r||'25%','--frame-rr':f.rr||'28%',
@@ -1083,13 +1092,16 @@ const conflictsOf=(id,list=S.wear)=>{const a=accById(id);return list.filter(o=>o
 const wearWith=(id,list=S.wear)=>list.includes(id)?list:[...list.filter(o=>!conflictsOf(id,list).includes(o)),id];
 function fixWear(){const keep=[];S.wear.forEach(id=>{const a=accById(id);if(a&&!keep.some(k=>slotHit(a,accById(k))))keep.push(id)});S.wear=keep}
 /* 방 가구: 창문·벽·바닥 자리마다 1개. 스테이지(홈·꾸미기·집중)에 그린다 */
-const roomLayers=rm=>RM_SLOTS.map(sl=>{const it=RM_BY[rm[sl]];return it?`<div class="ri ri-${sl}" style="width:${it.w}px">${it.svg}</div>`:''}).join('');
-function renderRooms(){
-  [['#homeStage',0],['#decoStage',0],['#focusStage',1]].forEach(([sel,floorOnly])=>{
-    const st=$(sel);if(!st)return;const rm=floorOnly?{floorC:S.rm.floorC,floorL:S.rm.floorL,floorR:S.rm.floorR}:S.rm,sig=JSON.stringify(rm);
-    if(st._sig===sig&&st.querySelector('.rmwrap'))return;st._sig=sig;
-    st.querySelectorAll('.rmwrap').forEach(e=>e.remove());
-    const d=document.createElement('div');d.className='rmwrap';d.innerHTML=roomLayers(rm);(st.querySelector('.rug')||st).after(d)})}
+function roomLayers(rm,size=[420,320]){
+  const [w,h]=size;
+  const zone={wallA:[.39,.38],wallB:[.39,.38],floorL:[.31,.33],floorC:[.46,.27],floorR:[.31,.33]};
+  return RM_SLOTS.map(sl=>{const it=RM_BY[rm[sl]];if(!it)return '';
+    const [zw,zh]=zone[sl],ratio=it.artRatio||1;
+    const width=Math.round(Math.min(w*zw,h*zh*ratio));
+    return `<div class="ri ri-${sl}" style="width:${width}px">${it.svg}</div>`;
+  }).join('');
+}
+function renderRooms(){['#homeStage','#decoStage','#focusStage'].forEach(sel=>$(sel)?.querySelectorAll('.rmwrap').forEach(e=>e.remove()))}
 
 /* ---------- 걸어다니는 고양이 ---------- */
 class Walker{
@@ -1103,6 +1115,12 @@ class Walker{
     this.x=Math.max(0,(stage.clientWidth-160)/2);this.dir=1;this.target=null;this.wait=1;this.last=performance.now();this.mood='normal';this.zt=0;
     this.el.addEventListener('click',e=>{e.stopPropagation();this.onTap&&this.onTap(this)});
     if(wander) requestAnimationFrame(t=>this.loop(t)); else this.place();
+  }
+  setTheme(){
+    const was=[...this.svg.classList].filter(k=>k!=='cat'&&k!=='painted-cat');
+    const holder=document.createElement('div');holder.innerHTML=catSVG();
+    const next=holder.firstElementChild;next.classList.add(...was);
+    this.svg.replaceWith(next);this.svg=next;this.setMood(this.mood);
   }
   setMood(m){this.mood=m;['happy','normal','tired','sleep','rest'].forEach(k=>{this.svg.classList.toggle('m-'+k,k===m);this.el.classList.toggle('m-'+k,k===m)});
     wearClasses(this.svg);wearClasses(this.el);this.el.classList.toggle('photo',S.look==='photo');this.updPhoto()}
@@ -1240,7 +1258,7 @@ function showFocus(){
   $('#f-sub').textContent=s.n;$('#f-sub').style.setProperty('--c',s.c);
   $('#f-goal').textContent=r.goal?'목표 '+r.goal/60000+'분':'자유 시간';
   $('#f-line').textContent=s.tip;
-  $('#focus').classList.add('on');focusCat.setMood('happy');applyCalm();
+  $('#focus').classList.add('on');focusCat.x=Math.max(0,(focusCat.w()-focusCat.el.offsetWidth)/2);focusCat.target=null;focusCat.wait=3;focusCat.place();focusCat.setMood('happy');applyCalm();
   $('#f-pause').textContent=r.pausedAt?'다시 하기':'잠깐 쉬기';
   clearInterval(tick);tick=setInterval(updFocus,250);updFocus();requestWake();
 }
@@ -1248,7 +1266,7 @@ function showFocus(){
 function calmHTML(){
   const cls=[...ACCS,...SHOP_ACC].filter(a=>S.wear.includes(a.id)).map(a=>'w-'+a.id).join(' ');
   if(S.look==='photo')return `<div class="calmcat ${cls}">${stickerHTML('normal')}</div>`;
-  return `<div class="calmcat draw ${cls}">${paintedSprite("lemon-poses.png",[1536,1024],[1037,530,470,426])}</div>`;
+  return `<div class="calmcat draw">${catSVG().replace('class="cat painted-cat"','class="cat painted-cat happyface"')}</div>`;
 }
 function applyCalm(){
   const on=!!S.calm,w=$('#calmWrap');
@@ -1570,7 +1588,7 @@ const josaE=w=>hasBatchim(w)?'을':'를';
 function inSeason(th){const t=dayOf();return !!(th&&th.season&&th.season.some(([a,b])=>t>=a&&t<=b))}
 const seasonGiftAvailable=it=>daysN()>0&&it.free&&inSeason(THEME_BY[it.theme]);
 /* 지금 철(추석·크리스마스…)이라 무료로 받을 수 있는데 아직 안 받은 것 */
-function seasonFree(){return [...RM_ITEMS.map(it=>({k:'item',it})),...SHOP_ACC.map(it=>({k:'acc',it}))].filter(({k,it})=>seasonGiftAvailable(it)&&!ownedBy(k,it))}
+function seasonFree(){return []}
 function afterDeco(){save();[homeCat,focusCat].forEach(c=>c.setMood(c.mood));renderAll()}
 function renderDeco(){
   decoCat.setMood('happy');wearClasses(decoCat.svg);wearClasses(decoCat.el);renderRooms();
@@ -1580,24 +1598,16 @@ function renderDeco(){
   ({cat:tabCat,frame:tabFrame,room:tabRoom,shop:tabShop})[decoTab]();
 }
 function tabCat(){
-  const days=daysN(),occ={};S.wear.forEach(id=>{const a=accById(id);a&&a.slot.forEach(k=>occ[k]=a.n)});
-  $('#decoBody').innerHTML=`<h3>고양이 모습</h3><div class="looks" id="looks"></div><p class="note">포근한 치즈색 털과 올리브색 눈의 그림 냥이예요.</p>
-    <h3>내 장식 <span class="note">— 한 자리에 하나만 달려요</span></h3>
-    <div class="slotmap">${Object.keys(SLOT_N).map(k=>`<span>${SLOT_N[k]} <b>${occ[k]||'비었어요'}</b></span>`).join('')}</div><div class="accs" id="accs"></div>`;
+  const themes=[['basic','기본 고양이'],['halloween','할로윈 고양이'],['chuseok','한가위 고양이'],['seollal','설날 고양이'],['christmas','크리스마스 고양이'],['spring','벚꽃 고양이']];
+  $('#decoBody').innerHTML=`<h3>고양이 테마</h3><p class="note">앉기·걷기·잠자기·공부하기까지 각 테마의 그림으로 바뀌어요. 모든 테마는 무료예요.</p>
+    <div class="cat-themes" id="catThemes">${themes.map(([id,name])=>`<button class="cat-theme ${S.catTheme===id?'on':''}" data-theme="${id}"><span class="cat-theme-art">${catSVG(id)}</span><b>${name}</b><small>${S.catTheme===id?'적용 중':'눌러서 적용'}</small></button>`).join('')}</div>
+    <h3>고양이 모습</h3><div class="looks" id="looks"></div>`;
+  $('#catThemes').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.catTheme=b.dataset.theme;S.look='draw';save();[homeCat,focusCat,decoCat,onbCat].filter(Boolean).forEach(c=>c.setTheme());renderAll();decoCat.hearts(3)});
   $('#looks').innerHTML=[['photo','사진 냥이'],['draw','그림 냥이']].map(([k,n])=>`<button class="fur ${S.look===k?'sel':''}" data-l="${k}" style="font-size:17px;padding:14px 4px">${n}</button>`).join('');
   $('#looks').querySelectorAll('button').forEach(b=>b.onclick=()=>{S.look=b.dataset.l;save();[homeCat,focusCat,decoCat].forEach(c=>c.setMood(c.mood));renderDeco()});
-  $('#accs').innerHTML=ACC_ALL.filter(a=>a.need!=null||accOwned(a)).map(a=>{const ok=accOwned(a),on=S.wear.includes(a.id);
-    return `<button class="accb ${ok?'':'lock'} ${a.top?'tier-top':''} ${on?'on':''}" data-a="${a.id}" style="--pc:${a.pc}"><div class="accplate">${badgeIcon(a.id)}</div>${a.n}
-      <div class="need">${ok?(on?'달고 있어요':'눌러서 달기'):`${LOCKICON}${a.need-days}일 남음`}</div><div class="need slotn">${slotLabel(a.slot)}</div></button>`}).join('');
-  $('#accs').querySelectorAll('.accb').forEach(b=>b.onclick=()=>{const a=accById(b.dataset.a);
-    if(!accOwned(a)){toast(fmt('함께한 날 '+a.need+'일이 되면 {cat이} 받을 수 있어'));return}
-    const was=S.wear.includes(a.id),out=was?[]:conflictsOf(a.id).map(id=>accById(id).n);
-    S.wear=was?S.wear.filter(x=>x!==a.id):wearWith(a.id);afterDeco();
-    if(out.length)toast(`${out.join(', ')} 대신 ${a.n}${josaE(a.n)} 달았어요`);
-    decoCat.face('pet',1200);decoCat.hearts(3)});
 }
 const frameSwatch=f=>`<div class="fsw" style="${frameStyle(f)}"><div class="fsi"></div></div>`;
-const roomSwatch=r=>`<div class="swr" style="--room-preview:url('assets/painted/${r.id==='basic'?'empty-room.png':'room-'+r.id+'.jpg'}')"></div>`;
+const roomSwatch=r=>`<div class="swr" style="--room-preview:url('${roomArtPath(r.id,roomLevel(r.id))}')"></div>`;
 function tabFrame(){
   $('#decoBody').innerHTML=`<h3>내 액자 <span class="note">— 모양이 다른 액자는 상점에서</span></h3>${S.look!=='photo'?'<p class="note" style="margin:-4px 0 10px">액자는 사진 냥이 모습일 때 보여요</p>':''}<div class="rooms" id="frs"></div>`;
   $('#frs').innerHTML=FRAMES.filter(frameOwned).map(f=>{const on=S.frame===f.id;
@@ -1605,19 +1615,27 @@ function tabFrame(){
   $('#frs').querySelectorAll('.roomb').forEach(b=>b.onclick=()=>{S.frame=b.dataset.f;applyFrame();afterDeco();decoCat.hearts(3);decoCat.face('pet',1000)});
 }
 function tabRoom(){
-  const days=daysN();
-  $('#decoBody').innerHTML=`<p class="note" style="margin:0 0 14px">처음에는 빈 방이에요. 공부한 날이 쌓이면 선물을 받고, 모은 츄르로 가구를 하나씩 놓을 수 있어요.</p><h3>방 테마 <span class="note">— 벽지와 바닥</span></h3><div class="rooms" id="rms"></div>
-    <h3 style="margin-top:18px">가구·벽 장식 <span class="note">— 자리마다 하나씩 놓여요</span></h3><div id="slots"></div>`;
+  const level=roomLevel(),next=level+1,rm=ROOMS.find(r=>r.id===S.room)||ROOMS[0];
+  $('#decoBody').innerHTML=`<p class="note" style="margin:0 0 14px">빈 방에서 시작해, 같은 그림에 물품이 하나씩 늘어나는 5단계 방이에요. 배치는 그림에 포함되어 있어요.</p><h3>방 테마</h3><div class="rooms" id="rms"></div>
+    <h3 style="margin-top:18px">${rm.n} · ${level}/5단계</h3><div class="room-levels" id="roomLevels"></div>
+    ${next<=5?`<button class="btn room-upgrade" id="roomUpgrade">${next}단계로 업그레이드 · 츄르 ${ROOM_LEVEL_COST[next]}개</button>`:'<p class="note">완성된 방이에요!</p>'}`;
   $('#rms').innerHTML=ROOMS.filter(roomOwned).map(r=>{const on=S.room===r.id;
     return `<button class="roomb ${on?'on':''}" data-r="${r.id}">${roomSwatch(r)}<span class="rn">${r.n}</span><div class="need">${on?'적용 중':'눌러서 적용'}</div></button>`}).join('');
   $('#rms').querySelectorAll('.roomb').forEach(b=>b.onclick=()=>{S.room=b.dataset.r;applyRoom();afterDeco();decoCat.hearts(3);decoCat.face('pet',1000)});
-  $('#slots').innerHTML=RM_SLOTS.map(sl=>`<div class="slotrow"><p class="sn">${RM_SLOT_N[sl]}</p><div class="rchips">
-    <button class="rchip ${S.rm[sl]?'':'on'}" data-sl="${sl}" data-id="">비우기</button>
-    ${RM_ITEMS.filter(i=>i.slot===sl&&(itemOwned(i)||i.need!=null)).map(i=>{const ok=itemOwned(i);
-      return `<button class="rchip ${S.rm[sl]===i.id?'on':''} ${ok?'':'lock'}" data-sl="${sl}" data-id="${i.id}" data-lock="${ok?0:i.need-days}">${i.svg}${i.n}${ok?'':` · ${i.need-days}일`}</button>`}).join('')}</div></div>`).join('');
-  $('#slots').querySelectorAll('.rchip').forEach(b=>b.onclick=()=>{
-    if(+b.dataset.lock){toast(`함께한 날 ${+b.dataset.lock}일 더 지나면 선물로 받아요`);return}
-    S.rm[b.dataset.sl]=b.dataset.id||null;afterDeco();decoCat.hearts(2)});
+  $('#roomLevels').innerHTML=Array.from({length:6},(_,step)=>`<div class="room-level ${step===level?'on':''}"><div class="room-level-art" style="background-image:url('${roomArtPath(rm.id,step)}')"></div><b>${step===0?'빈 방':step+'단계'}</b><small>${step<=level?'보유 중':step===next?'다음 업그레이드':'잠겨 있어요'}</small></div>`).join('');
+  if(next<=5)$('#roomUpgrade').onclick=()=>buyRoomUpgrade(rm,next);
+}
+function buyRoomUpgrade(rm,step){
+  if(S.room!==rm.id||roomLevel(rm.id)+1!==step)return;
+  const cost=ROOM_LEVEL_COST[step],can=S.churu>=cost,t0=Date.now();
+  openModal(`<div class="stage bpv" style="--room-art:url('${roomArtPath(rm.id,step)}')"></div><p class="bpname">${rm.n} · ${step}단계</p><p class="note">같은 방 그림에 물품이 하나 더해져요.</p><p class="bpcost">츄르 ${cost}개</p><p class="note">${can?`지금 ${S.churu}개 → 업그레이드 후 ${S.churu-cost}개`:`츄르가 ${cost-S.churu}개 모자라요`}</p><button class="btn sub ghost" id="ru-no">취소</button>${can?'<button class="btn sub" id="ru-yes" style="color:#fff">업그레이드</button>':''}`);
+  $('#ru-no').onclick=closeModal;
+  if(can)$('#ru-yes').onclick=e=>{if(Date.now()-t0<500)return;e.currentTarget.disabled=true;
+    if(S.room!==rm.id||roomLevel(rm.id)+1!==step||S.churu<cost)return;
+    S.churu-=cost;(S.roomLevels||(S.roomLevels={}))[rm.id]=step;
+    (S.purchaseCosts||(S.purchaseCosts={}))['roomLevel:'+rm.id+':'+step]=cost;
+    closeModal();applyRoom();afterDeco();decoCat.hearts(5);toast(`${rm.n} ${step}단계가 되었어요!`);
+  };
 }
 /* 상점: 테마별로 방·가구·장식·액자를 한자리에. 지금 철인 테마가 맨 앞. */
 function shopSections(){
@@ -1639,7 +1657,6 @@ function tabShop(){
   const secs=shopSections();
   const built=secs.map(th=>{
     const tiles=[...ROOMS.filter(r=>r.theme===th.id&&r.cost>0).map(r=>shopTile('room',r)),
-      ...RM_ITEMS.filter(i=>i.theme===th.id&&i.cost>0&&i.need==null).map(i=>shopTile('item',i)),
       ...SHOP_ACC.filter(a=>a.theme===th.id).map(a=>shopTile('acc',a)),
       ...FRAMES.filter(f=>f.theme===th.id&&f.cost>0).map(f=>shopTile('frame',f))];
     if(!tiles.length)return null;
@@ -1658,13 +1675,11 @@ function tabShop(){
 function previewHTML(kind,it){
   const rm=kind==='room'?it:(ROOMS.find(x=>x.id===S.room)||ROOMS[0]);
   const fr=kind==='frame'?it:(FRAMES.find(x=>x.id===S.frame)||FRAMES[0]);
-  const wear=kind==='acc'?wearWith(it.id):S.wear;
-  const items=kind==='item'?{...S.rm,[it.slot]:it.id}:S.rm;
-  const photo=S.look==='photo'||kind==='frame'||(kind==='acc'&&!DRAW_ACC.includes(it.id));   // 그림 냥이에 안 그려지는 것은 사진으로 보여준다
-  const vars=`--room-art:url('assets/painted/${rm.id==='basic'?'empty-room.png':'room-'+rm.id+'.jpg'}');--room-wall:${rm.wall};--room-floor1:${rm.f1};--room-floor2:${rm.f2};--room-border:${rm.bd};--room-rug:${rm.rug};${frameStyle(fr)}`;
+  const photo=S.look==='photo'||kind==='frame';
+  const vars=`--room-art:url('${roomArtPath(rm.id,roomLevel(rm.id))}');--room-wall:${rm.wall};--room-floor1:${rm.f1};--room-floor2:${rm.f2};--room-border:${rm.bd};--room-rug:${rm.rug};${frameStyle(fr)}`;
   const cat=photo?stickerHTML('happy'):catSVG().replace('class="cat painted-cat"','class="cat painted-cat happyface"');
-  return `<div class="stage bpv" style="${vars}"><div class="wall"></div><div class="floor"></div><div class="rug"></div><div class="rmwrap">${roomLayers(items)}</div>
-    <div class="bpcat ${photo?'photo':''} ${wear.map(id=>'w-'+id).join(' ')}">${cat}</div></div>`;
+  return `<div class="stage bpv" style="${vars}"><div class="wall"></div><div class="floor"></div><div class="rug"></div>
+    <div class="bpcat ${photo?'photo':''}">${cat}</div></div>`;
 }
 function buySheet(kind,it,free){
   const cost=free?0:it.cost,can=S.churu>=cost,t0=Date.now();
@@ -1716,10 +1731,24 @@ function churuBackpay(){
 }
 function runOnce(){   // 앱을 열었을 때 1회성 알림을 하나씩 (모달이 겹치지 않게)
   if(!S.me||S.run)return;
+  if(accessoryRefundNotice())return;
+  if(roomRefundNotice())return;
   if(shopRefund())return;
   if(churuBackpay())return;
   if(seasonNotice())return;
   albumBackfill();
+}
+function accessoryRefundNotice(){
+  const amount=S.accessoryRefundPending||0;if(!amount)return false;
+  S.accessoryRefundPending=0;save();renderAll();
+  openModal(`${miniCat()}<p class="rewardnum">장식 환불 +${amount} 츄르</p><p class="line">고양이 그림 위에 따로 얹던 장식을 없애고<br>구매에 쓴 츄르를 돌려드렸어요.</p><p class="note">새 고양이 테마는 꾸미기에서 무료로 고를 수 있어요.</p><br><button class="btn" id="ar-ok">확인</button>`);
+  $('#ar-ok').onclick=()=>{closeModal();setTimeout(runOnce,400)};return true;
+}
+function roomRefundNotice(){
+  const amount=S.roomRefundPending||0;if(!amount)return false;
+  S.roomRefundPending=0;save();renderAll();
+  openModal(`${miniCat()}<p class="rewardnum">방 물품 환불 +${amount} 츄르</p><p class="line">개별 물품 배치를 단계별 방 그림으로 바꾸면서<br>구매했던 물품의 츄르를 돌려드렸어요.</p><p class="note">기존 방 테마 구매와 공부 기록은 그대로예요.</p><br><button class="btn" id="rr-ok">확인</button>`);
+  $('#rr-ok').onclick=()=>{closeModal();setTimeout(runOnce,400)};return true;
 }
 /* 한 번만: 미리보기 없이 바로 사졌던 12츄르 액자 값을 돌려준다(액자는 그대로 둔다) */
 function shopRefund(){
@@ -1777,7 +1806,7 @@ $('#b-export').onclick=async()=>{const {run,push,...rest}=S;const code='NYANGBAK
   try{await navigator.clipboard.writeText(code);toast('백업 코드 복사 완료! 메모장이나 카톡에 저장해 두세요')}catch(e){prompt('이 코드를 저장해 두세요',code)}};
 $('#b-import').onclick=()=>{openSheet(`<h3>백업 불러오기</h3><p class="hint">저장해 둔 백업 코드를 붙여넣어 주세요.</p><textarea class="inp" id="imp"></textarea><br><br><button class="btn" id="imp-ok">불러오기</button>`);
   $('#imp-ok').onclick=()=>{try{const t=$('#imp').value.trim().replace(/^NYANGBAK:/,'');const d=JSON.parse(decodeURIComponent(escape(atob(t))));
-    if(d.v!==1)throw 0;backupState(S,'백업 불러오기 전');S=normalizeState(RecordSafety.merge(S,d));save();closeSheet();applyFur();applyRoom();renderAll();toast('불러왔어요! 반가워')}catch(e){toast('코드가 올바르지 않아요')}}};
+    if(d.v!==1)throw 0;backupState(S,'백업 불러오기 전');S=normalizeState(RecordSafety.merge(S,normalizeState(d)));save();closeSheet();applyFur();applyRoom();[homeCat,focusCat,decoCat].forEach(c=>c&&c.setTheme());renderAll();toast('불러왔어요! 반가워')}catch(e){toast('코드가 올바르지 않아요')}}};
 
 /* ---------- 서비스워커에 상태 전달 (알림 문구를 기기에서 고르기 위해) ---------- */
 function syncSW(){
@@ -1822,7 +1851,7 @@ async function syncExchange(key){
       let incoming=null,rawIncoming=null;
       if(remote.data){rawIncoming=await unpackS(remote.data);if(rawIncoming.v!==1)throw new Error('기록 형식 확인 필요');
         rawIncoming.upd=remote.upd;backupState(rawIncoming,'서버 기록 원본');incoming=normalizeState(rawIncoming);}
-      const before=JSON.stringify(S);
+      const before=JSON.stringify(S),beforeTheme=S.catTheme;
       if(incoming){backupState(S,'기기 동기화 전');S=normalizeState(RecordSafety.merge(S,incoming));}
       // Every upload is preceded by a read; never send an empty state after a failed read.
       const content=state=>{const {upd,run,push,...rest}=state;return JSON.stringify(rest)};
@@ -1831,7 +1860,7 @@ async function syncExchange(key){
       persistState();syncSW();
       if(JSON.stringify(S)!==before){
         applyFur();applyRoom();applyFrame();if(S.me)$('#onb').classList.remove('on');
-        [homeCat,focusCat,decoCat].forEach(c=>c&&c.setMood(c.mood));renderAll();
+        [homeCat,focusCat,decoCat].forEach(c=>c&&(beforeTheme!==S.catTheme?c.setTheme():c.setMood(c.mood)));renderAll();
       }
       if(needsWrite){
         const snapshot=RecordSafety.clone(S),data=await packS(snapshot);
@@ -1931,7 +1960,7 @@ function fitDesk(){
   const zz=Math.max(.72,Math.min(maxZoom,(innerWidth-32)/1152,innerHeight/(deskNeed||700)));
   h.style.zoom=zz.toFixed(3);h.style.setProperty('--zm',zz.toFixed(3));
 }
-addEventListener('resize',()=>{clearTimeout(fitT);fitT=setTimeout(fitDesk,60)});
+addEventListener('resize',()=>{clearTimeout(fitT);fitT=setTimeout(()=>{fitDesk();renderRooms()},60)});
 if(mqDesk.addEventListener)mqDesk.addEventListener('change',fitDesk);
 
 /* ---------- 시작 ---------- */

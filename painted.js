@@ -22,12 +22,23 @@ const PAINTED_SEASONAL = {
 RM_ITEMS.forEach(item => {
   const core=PAINTED_FURNITURE[item.id], box=core||PAINTED_SEASONAL[item.id];
   if(!box)return;
-  item.w=Math.round(box[4]*.7);
+  item.w=box[4];
+  item.artRatio=box[2]/box[3];
   // The lantern tassel sits just above the stocking in the source atlas.
   const clipShape=item.id==='stocking'?'<path d="M917 369H1060V350H1150V603H917Z"/>':'';
   item.svg=paintedSprite(core?'furniture.png':'seasonal.png',core?[1254,1254]:[1774,887],box.slice(0,4),'',clipShape);
 });
 
+/* Cat costumes are painted into each complete pose. No separate wearable layer. */
+const CAT_THEMES={basic:{file:'lemon-poses.png',boxes:[[48,87,421,420],[497,92,528,414],[1044,169,487,350],[22,523,493,441],[540,518,481,424]]},
+  halloween:{file:'cat-halloween.webp'},chuseok:{file:'cat-chuseok.webp'},christmas:{file:'cat-christmas.webp'},spring:{file:'cat-spring.webp'},seollal:{file:'cat-seollal.webp'}};
+const THEME_POSE_BOXES=[[20,30,460,480],[495,30,540,480],[1055,30,481,480],[0,515,530,470],[550,515,480,470]];
+function paintedCatSVG(theme='basic'){
+  const art=CAT_THEMES[theme]||CAT_THEMES.basic,boxes=art.boxes||THEME_POSE_BOXES;
+  const names=['idle','walk','sleep','study','happy'];
+  return `<svg class="cat painted-cat" viewBox="0 0 200 200" aria-hidden="true" data-cat-theme="${theme}">${names.map((name,i)=>`<g class="paint-pose paint-${name}"><g class="paint-art" ${name==='walk'?'transform="translate(200 0) scale(-1 1)"':''}>${paintedSprite(art.file,[1536,1024],boxes[i]).replace('<svg ','<svg width="200" height="200" preserveAspectRatio="xMidYMax meet" ')}</g></g>`).join('')}</svg>`;
+}
+/* Legacy accessory artwork follows solely for old saved-data IDs and historical previews. */
 const PAINTED_ACCESSORIES = {};
 [
  ['a',['bow','bell','flower','glasses','crown','headband','bowtie','scarf'],[[50,108,365,286],[487,140,369,226],[938,128,341,222],[1320,150,436,188],[73,523,320,225],[469,480,394,305],[922,540,377,205],[1369,465,340,336]]],
@@ -81,7 +92,7 @@ const paintedWearStyle=document.createElement('style');
 paintedWearStyle.textContent='.painted-cat .acc{display:none}'+Object.keys(PAINTED_ACCESSORIES).map(id=>`.w-${id} .acc-${id}{display:inline}`).join('');
 document.head.appendChild(paintedWearStyle);
 
-function paintedCatSVG(includeAccessories=true){
+function legacyPaintedCatSVG(includeAccessories=true){
   const poses=[
     ['idle',[48,87,421,420],[86.5,92,1.45]],
     ['walk',[497,92,528,414],[144,108,1.25]],

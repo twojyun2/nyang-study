@@ -2,9 +2,8 @@
    - 오프라인에서도 열리게 앱 껍데기를 캐시
    - 서버(GitHub Actions)는 "깨우기" 푸시만 보낸다. 무슨 말을 할지는
      기기에 저장된 공부 기록(state.json)을 보고 여기서 고른다. */
-const VER = 'nyang-v18-worn-accessories-exam-charts';
-const ROOM_ART = ['mint','lavender','night','study','playroom','hanok','seolroom','xmasroom','sakuraroom','halloroom','daebak'].map(id=>'assets/painted/room-'+id+'.jpg');
-const SHELL = ['./', 'index.html', 'record-safety.js', 'samun.js', 'deco.js', 'painted.js', 'painted.css', 'assets/painted/lemon-poses.png', 'assets/painted/furniture.png', 'assets/painted/seasonal.png', 'assets/painted/empty-room.png', 'samun_cards.json', 'samun_idmap.json', 'manifest.json', 'icons/icon-192-v2.png', 'icons/icon-180-v2.png', 'icons/icon-512-v2.png', 'icons/icon-maskable-512-v2.png', ...ROOM_ART, ...['accessories-a','accessories-b','accessories-c','glasses-side','frames-a','frames-b','neck-front','neck-profile','head-worn'].map(id=>'assets/painted/'+id+'.png')];
+const VER = 'nyang-v20-painted-room-levels';
+const SHELL = ['./', 'index.html', 'record-safety.js', 'samun.js', 'deco.js', 'painted.js', 'painted.css', 'assets/painted/lemon-poses.png', 'assets/painted/room-basic-0.webp', 'samun_cards.json', 'samun_idmap.json', 'manifest.json', 'icons/icon-192-v2.png', 'icons/icon-180-v2.png', 'icons/icon-512-v2.png', 'icons/icon-maskable-512-v2.png', ...['cat-halloween','cat-chuseok','cat-christmas','cat-spring','cat-seollal'].map(id=>'assets/painted/'+id+'.webp'), ...['frames-a','frames-b'].map(id=>'assets/painted/'+id+'.png')];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(VER).then(c => c.addAll(SHELL)).then(() => self.skipWaiting()));

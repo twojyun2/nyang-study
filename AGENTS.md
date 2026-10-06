@@ -1,0 +1,1 @@
+When editing this app's room art, furniture, or cat illustrations, read `ART_STYLE.md` first and keep its visual rules. Preserve study records and purchased currency through one-time migrations when retiring visual items.

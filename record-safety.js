@@ -21,6 +21,37 @@ const RecordSafety = (() => {
     out.studyRewardV=2;out.churuFix=1;
     return out;
   }
+  function refundRetiredAccessories(state,prices){
+    if(state.accessoryRefundV===1)return state;
+    const out=clone(state),paid=out.purchaseCosts||{};
+    const owned=new Set((out.bought||[]).filter(id=>Object.hasOwn(prices,id)));
+    const amount=[...owned].reduce((total,id)=>{
+      const key='bought:'+id;
+      return total+(Object.hasOwn(paid,key)?Math.max(0,Number(paid[key])||0):prices[id]);
+    },0);
+    out.churu=(Number(out.churu)||0)+amount;
+    out.accessoryRefundTotal=(Number(out.accessoryRefundTotal)||0)+amount;
+    out.accessoryRefundPending=(Number(out.accessoryRefundPending)||0)+amount;
+    out.bought=(out.bought||[]).filter(id=>!Object.hasOwn(prices,id));
+    out.wear=[];out.seenAcc=[];out.look='draw';out.accessoryRefundV=1;
+    return out;
+  }
+  function refundRetiredFurniture(state,prices){
+    if(state.roomUpgradeV===1)return state;
+    const out=clone(state),paid=out.purchaseCosts||{};
+    const owned=new Set((out.rmBought||[]).filter(id=>Object.hasOwn(prices,id)));
+    const amount=[...owned].reduce((total,id)=>{
+      const key='rmBought:'+id;
+      return total+(Object.hasOwn(paid,key)?Math.max(0,Number(paid[key])||0):prices[id]);
+    },0);
+    out.churu=(Number(out.churu)||0)+amount;
+    out.roomRefundTotal=(Number(out.roomRefundTotal)||0)+amount;
+    out.roomRefundPending=(Number(out.roomRefundPending)||0)+amount;
+    out.rmBought=(out.rmBought||[]).filter(id=>!Object.hasOwn(prices,id));
+    out.rm={wallA:null,wallB:null,floorC:null,floorL:null,floorR:null};
+    out.roomLevels={basic:0};out.roomUpgradeV=1;
+    return out;
+  }
   function track(before, after, time) {
     after.recordChanges=clone(after.recordChanges||{});
     for(const p of paths){
@@ -63,7 +94,22 @@ const RecordSafety = (() => {
     let extraCost=0;
     for(const p of ['bought','rmBought','roomBought','frameBought'])for(const k of out[p])
       if(!(newer[p]||[]).includes(k))extraCost+=out.purchaseCosts[p+':'+k]||0;
-    out.churu=Math.max(0,(newer.churu||0)+reward(out)-reward(newer)-extraCost);
+    for(const [room,level] of Object.entries(older.roomLevels||{}))
+      for(let step=(newer.roomLevels?.[room]||0)+1;step<=level;step++)
+        extraCost+=out.purchaseCosts['roomLevel:'+room+':'+step]||0;
+    const refunded=Math.max(a.accessoryRefundTotal||0,b.accessoryRefundTotal||0);
+    const refundMissing=Math.max(0,refunded-(newer.accessoryRefundTotal||0));
+    const roomRefunded=Math.max(a.roomRefundTotal||0,b.roomRefundTotal||0);
+    const roomRefundMissing=Math.max(0,roomRefunded-(newer.roomRefundTotal||0));
+    out.accessoryRefundTotal=refunded;
+    out.accessoryRefundPending=(newer.accessoryRefundPending||0)+refundMissing;
+    out.accessoryRefundV=Math.max(a.accessoryRefundV||0,b.accessoryRefundV||0);
+    out.roomRefundTotal=roomRefunded;
+    out.roomRefundPending=(newer.roomRefundPending||0)+roomRefundMissing;
+    out.roomUpgradeV=Math.max(a.roomUpgradeV||0,b.roomUpgradeV||0);
+    out.roomLevels={...(older.roomLevels||{}),...(newer.roomLevels||{})};
+    for(const [id,level] of Object.entries(older.roomLevels||{}))out.roomLevels[id]=Math.max(level,out.roomLevels[id]||0);
+    out.churu=Math.max(0,(newer.churu||0)+reward(out)-reward(newer)-extraCost+refundMissing+roomRefundMissing);
     out.run=a.run;out.push=a.push;
     return out;
   }
@@ -76,6 +122,6 @@ const RecordSafety = (() => {
     if(list[0]?.data===raw)return;
     list.unshift({at:Date.now(),reason,data:raw});storage.setItem(k,JSON.stringify(list.slice(0,5)));
   }
-  return {merge,track,backup,clone,studyReward,recordReward,upgradeStudyRewards};
+  return {merge,track,backup,clone,studyReward,recordReward,upgradeStudyRewards,refundRetiredAccessories,refundRetiredFurniture};
 })();
 if(typeof module!=='undefined')module.exports=RecordSafety;
