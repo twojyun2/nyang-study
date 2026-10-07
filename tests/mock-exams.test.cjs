@@ -3,12 +3,12 @@ const source=fs.readFileSync('samun.js','utf8');
 const mock=[{d:'2025-09-07',sc:32,n:'기존',t:1,custom:'keep'}];
 let fields={},html='',saved=0,chips=[];
 const context={st:()=>({mock}),dayOf:()=> '2026-10-05',now:()=>2,esc:s=>s,toast:()=>{},save:()=>saved++,closeSheet:()=>{},closeModal:()=>{},render:()=>{},openSheet:s=>{html=s;fields={};chips=['3월 학평','6월 모평','9월 모평','수능','학원'].map(textContent=>({textContent}));for(const id of ['mk-q','mk-no','mk-del','mk-ok','mk-d','mk-s','mk-n','mk-y','mk-mo','mk-g'])fields['#'+id]={value:'',querySelectorAll:()=>id==='mk-q'?chips:[]};},$:s=>fields[s]};
-vm.createContext(context);vm.runInContext(source.slice(source.indexOf('function mockSheet(t)'),source.indexOf('\nfunction start(opt)')),context);
+vm.createContext(context);vm.runInContext(source.slice(source.indexOf('const mdText ='),source.indexOf('\nfunction start(opt)')),context);
 context.mockSheet();assert.match(html,/시험 연도/);assert.ok(html.indexOf('id="mk-q"')<html.indexOf('id="mk-mo"'));assert.match(html,/id=\"mk-g\" type=\"number\"/);
 function fill(vals){for(const[k,v]of Object.entries(vals))fields['#mk-'+k].value=v;}
-chips[1].onclick();assert.equal(fields['#mk-mo'].value,6);assert.equal(fields['#mk-n'].value,'6월 모평');
+chips[1].onclick();assert.equal(fields['#mk-mo'].value,6);assert.equal(fields['#mk-n'].value,'모평');
 fill({d:'2026-10-04',s:'43',n:'6월 모평',y:'2024',mo:'6',g:'2'});fields['#mk-ok'].onclick();
-assert.equal(mock.length,2);assert.equal(mock[1].examYear,2024);assert.equal(mock[1].examMonth,6);assert.equal(mock[1].grade,2);assert.equal(mock[1].d,'2026-10-04');
+assert.equal(mock.length,2);assert.equal(mock[1].examYear,2024);assert.equal(mock[1].examMonth,6);assert.equal(mock[1].grade,2);assert.equal(mock[1].d,'2026-10-04');assert.equal(mock[1].n,'모평');
 context.mockSheet(2);assert.match(html,/id="mk-y"[^>]*value="2024"/);assert.match(html,/id="mk-g"[^>]*value="2"/);
 fill({d:'2026-10-04',s:'44',n:'6월 모평',y:'2024',mo:'6',g:''});fields['#mk-ok'].onclick();assert.equal(mock[1].grade,null);assert.equal(mock.length,2);
 context.mockSheet(1);fill({d:'2025-09-07',s:'33',n:'기존',y:'2025',mo:'9',g:'4'});fields['#mk-ok'].onclick();assert.equal(mock[0].custom,'keep');assert.equal(mock[0].t,1);assert.equal(mock[0].grade,4);
@@ -21,10 +21,10 @@ console.log('PASS: exam year/month independent from solved date, grades, edit/cl
 const htmlSource=fs.readFileSync('index.html','utf8');
 const chartCode=htmlSource.slice(htmlSource.indexOf('function lineChart(pts,o={})'),htmlSource.indexOf('function dayChart(t)'));
 const chartCtx={chartN:0};vm.createContext(chartCtx);vm.runInContext(chartCode,chartCtx);
-const plotCtx={st:()=>({mock:[{d:'2025-06-01',sc:31,grade:3,t:1,examYear:2025,examMonth:6},{d:'2025-09-01',sc:43,grade:2,t:2,examYear:2025,examMonth:9}],hist:[]}),mockSorted:()=>plotCtx.st().mock,CUTS:[[0,1]],lineChart:chartCtx.lineChart,kToDate:d=>new Date(d),WD:['일','월','화','수','목','금','토'],esc:s=>s};
+const plotCtx={st:()=>({mock:[{d:'2025-06-01',sc:31,grade:3,t:1,examYear:2025,examMonth:6,n:'6월 모평'},{d:'2025-09-01',sc:43,grade:2,t:2,examYear:2025,examMonth:9,n:'25년 9월 모평'}],hist:[]}),mockSorted:()=>plotCtx.st().mock,CUTS:[[0,1]],lineChart:chartCtx.lineChart,kToDate:d=>new Date(d),WD:['일','월','화','수','목','금','토'],esc:s=>s};
 vm.createContext(plotCtx);
 vm.runInContext(source.slice(source.indexOf('const mdText ='),source.indexOf('function mockSheet(t)')),plotCtx);
-let scoreMarkup=vm.runInContext('mockCard()',plotCtx);assert.match(scoreMarkup,/점수대로 보기/);assert.match(scoreMarkup,/등급대로 보기/);assert.match(scoreMarkup,/>43</);
+let scoreMarkup=vm.runInContext('mockCard()',plotCtx);assert.match(scoreMarkup,/점수대로 보기/);assert.match(scoreMarkup,/등급대로 보기/);assert.match(scoreMarkup,/>43</);assert.match(scoreMarkup,/2025년 9월 모평<\/span> <strong class="mockgrade-strong">\(2등급\)<\/strong>/);assert.doesNotMatch(scoreMarkup,/>25년 9월 모평/);
 let gradeMarkup=vm.runInContext("mockGraphMode='grade';mockCard()",plotCtx);assert.match(gradeMarkup,/1등급/);assert.match(gradeMarkup,/9등급/);assert.match(gradeMarkup,/등급을 적은 시험만 보여요/);
 plotCtx.st=()=>({mock:[{d:'2025-09-01',sc:43,t:2}],hist:[]});
 let missingGrade=vm.runInContext('mockCard()',plotCtx);assert.match(missingGrade,/등급을 기록하면 그래프가 보여요/);

@@ -353,7 +353,15 @@ function render(){
 /* ---------- 모의고사 점수 기록: 본 날짜·몇 번째·그래프 (2026-09-30 지연 피드백: 3월·6월·9월이 뒤죽박죽이라 언제 풀었는지 모름) ---------- */
 const mdText = d => { const dt = kToDate(d); return `${dt.getMonth()+1}월 ${dt.getDate()}일 (${WD[dt.getDay()]})`; };
 const mdShort = m => m.est ? (+m.d.split('-')[1])+'월' : (+m.d.split('-')[1])+'/'+(+m.d.split('-')[2]);
-const mockExamText = m => m.examYear && m.examMonth ? `${m.examYear}년 ${m.examMonth}월` : m.y && m.mo ? `${m.y}년 ${m.mo}월` : '';
+const mockExamName = m => {
+  const raw = String(m.n || '').split('·').pop().trim();
+  return raw.replace(/^(?:(?:20)?\d{2}년\s*)?(?:\d{1,2}월\s*)?/, '').trim() || '시험';
+};
+const mockExamText = m => {
+  const year = +(m.examYear || m.y || m.d.slice(0,4));
+  const month = +(m.examMonth || m.mo || m.d.slice(5,7));
+  return `${year < 100 ? year + 2000 : year}년 ${month}월 ${mockExamName(m)}`;
+};
 let mockGraphMode='score';
 function mockCard(){
   const a = mockSorted(), n = a.length;
@@ -371,11 +379,9 @@ function mockCard(){
     }
     body = `<div class="msum"><div><b>${last.sc}점</b><span>최근</span></div><div><b>${best}점</b><span>최고</span></div><div><b>${avg}점</b><span>${n}회 평균</span></div></div>`
       + `<div class="mock-chart-switch"><button type="button" data-mock-chart="score" class="${mockGraphMode==='score'?'on':''}" aria-pressed="${mockGraphMode==='score'}">점수대로 보기</button><button type="button" data-mock-chart="grade" class="${mockGraphMode==='grade'?'on':''}" aria-pressed="${mockGraphMode==='grade'}">등급대로 보기</button></div>`+chart
-      + `<div class="mocklist">` + a.map((m,i) => ({m,i})).reverse().map(({m,i}) => {
-        const dd = i ? m.sc - a[i-1].sc : null;
-        return `<div class="mockrow ${i===n-1?'last':''}" data-t="${m.t}"><span class="mockn">${i+1}번째</span><b>${m.sc}점</b>${m.grade ? `<span class="mockgrade">${m.grade}등급</span>` : ''}${dd!==null?`<span class="mockd ${dd>0?'up':dd<0?'down':''}">${dd>0?'+':''}${dd}</span>`:''}`
-          + `<span class="md" style="margin-left:auto;text-align:right">${m.est ? `${+m.d.split('-')[1]}월 <span class="est">날짜 정하기</span>` : mdText(m.d)}${mockExamText(m) ? `<br>${mockExamText(m)} 시험` : ''}${m.n ? ' · '+esc(m.n) : ''}</span></div>`;
-      }).join('') + `</div><p class="smsub" style="margin:8px 0 0">날짜순으로 정렬돼요. 누르면 시험 연월·날짜·점수·등급을 고칠 수 있어요.</p>`;
+      + `<div class="mocklist">` + a.slice().reverse().map(m =>
+        `<div class="mockrow" data-t="${m.t}"><span>${esc(mockExamText(m))}</span>${m.grade ? ` <strong class="mockgrade-strong">(${m.grade}등급)</strong>` : ''}</div>`
+      ).join('') + `</div>`;
   }
   const byDay = {}; st().hist.forEach(h => byDay[h.d] = h.sc);
   const days = Object.keys(byDay).sort().slice(-10);
@@ -388,13 +394,13 @@ function mockSheet(t){
   openSheet(`<h3>${ed ? '모의고사 기록 고치기' : '모의고사 점수 기록'}</h3>
     <div class="field"><label>본 날짜 <span class="note">— 바꿀 수 있어요</span></label><input class="inp" id="mk-d" type="date" value="${ed ? ed.d : today}" max="${today}"></div>
     <div class="field"><label>원점수 <span class="note">/ 50점</span></label><input class="inp" id="mk-s" type="number" inputmode="numeric" min="0" max="50" placeholder="예: 38" value="${ed ? ed.sc : ''}"></div>
-    <div class="field"><label>이름 <span class="note">(안 써도 돼요)</span></label><input class="inp" id="mk-n" maxlength="12" placeholder="예: 6월 모평" value="${ed && ed.n ? esc(ed.n) : ''}">
+    <div class="field"><label>시험 이름 <span class="note">(안 써도 돼요)</span></label><input class="inp" id="mk-n" maxlength="12" placeholder="예: 모평" value="${ed ? esc(mockExamName(ed)) : ''}">
       <div class="chips mini6" id="mk-q" style="margin:8px 0 0;grid-template-columns:repeat(5,1fr)">${['3월 학평','6월 모평','9월 모평','수능','학원'].map(x => `<button class="chip" style="--c:#ffe7ee;padding:8px 2px;font-size:14px">${x}</button>`).join('')}</div></div>
     <div class="row" style="gap:12px"><div class="field" style="flex:1;min-width:0"><label for="mk-y">시험 연도</label><input class="inp" id="mk-y" type="number" inputmode="numeric" min="2000" max="2100" step="1" placeholder="예: 2026" value="${ey}"></div><div class="field" style="flex:1;min-width:0"><label for="mk-mo">시험 월</label><input class="inp" id="mk-mo" type="number" inputmode="numeric" min="1" max="12" step="1" placeholder="예: 6" value="${em}"></div></div>
     <div class="field"><label for="mk-g">등급 <span class="note">(선택)</span></label><input class="inp" id="mk-g" type="number" inputmode="numeric" min="1" max="9" step="1" placeholder="예: 2" value="${ed?.grade||''}"></div>
     <p class="note">시험지의 연도·월을 적어주세요. 푼 날짜는 위에 따로 기록돼요.</p>
     <div class="row" style="margin-top:6px">${ed ? '<button class="btn sub ghost" id="mk-del">지우기</button>' : '<button class="btn sub ghost" id="mk-no">취소</button>'}<button class="btn sub mint" id="mk-ok" style="color:var(--ink)">${ed ? '저장' : '기록하기'}</button></div>`);
-  $('#mk-q').querySelectorAll('.chip').forEach(b => b.onclick = () => { $('#mk-n').value = b.textContent; const month=parseInt(b.textContent,10); if(Number.isInteger(month))$('#mk-mo').value=month; });
+  $('#mk-q').querySelectorAll('.chip').forEach(b => b.onclick = () => { $('#mk-n').value = b.textContent.replace(/^\d{1,2}월\s*/, ''); const month=parseInt(b.textContent,10); if(Number.isInteger(month))$('#mk-mo').value=month; });
   if ($('#mk-no')) $('#mk-no').onclick = closeSheet;
   if ($('#mk-del')) $('#mk-del').onclick = () => {
     openModal(`<p class="rewardnum" style="font-size:25px">이 기록을 지울까요?</p><p class="line">${mdText(ed.d)} · ${ed.sc}점</p><br>
@@ -408,8 +414,9 @@ function mockSheet(t){
     if (raw === '' || !Number.isFinite(sc) || sc < 0 || sc > 50){ toast('점수는 0~50 사이로 입력해줘'); return; }
     const examYear=+$('#mk-y').value, examMonth=+$('#mk-mo').value, grade=$('#mk-g').value ? +$('#mk-g').value : null;
     if (!Number.isInteger(examYear) || examYear<2000 || examYear>2100 || !Number.isInteger(examMonth) || examMonth<1 || examMonth>12 || (grade!==null && (!Number.isInteger(grade) || grade<1 || grade>9))){ toast('시험 연월과 등급을 확인해줘'); return; }
-    if (ed){ Object.assign(ed,{d,sc,n:nm,examYear,examMonth,grade}); delete ed.est; }
-    else st().mock.push({d,sc,n:nm,examYear,examMonth,grade,t:now()});
+    const name=nm ? mockExamName({n:nm}) : '';
+    if (ed){ Object.assign(ed,{d,sc,n:name,examYear,examMonth,grade}); delete ed.est; }
+    else st().mock.push({d,sc,n:name,examYear,examMonth,grade,t:now()});
     save(); closeSheet(); render();
     toast(ed ? '고쳤어요!' : '기록했어요!');
   };
